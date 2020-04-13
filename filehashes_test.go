@@ -6,6 +6,7 @@ import (
 	_ "crypto/md5"
 	_ "crypto/sha1"
 	"fmt"
+	"log"
 
 	"github.com/northbright/filehashes"
 )
@@ -13,31 +14,55 @@ import (
 func ExampleSum() {
 	ctx := context.Background()
 
-	ch, err := filehashes.Sum(ctx, "filehashes.go", crypto.MD5, crypto.SHA1)
+	ch, err := filehashes.Sum(
+		ctx,
+		filehashes.DefaultBufferSize,
+		"filehashes.go",
+		crypto.MD5,
+		crypto.SHA1,
+	)
+
 	if err != nil {
-		fmt.Printf("Sum error: %v", err)
+		log.Printf("Sum error: %v", err)
 		return
 	}
 
 	for m := range ch {
 		switch msg := m.(type) {
-		case *filehashes.SumErrorMsg,
-			*filehashes.SumDoneMsg,
-			*filehashes.SumStartedMsg,
-			*filehashes.SumStoppedMsg,
-			*filehashes.SumProgressUpdatedMsg:
-			// All types of messages have String()
-			fmt.Printf("%v", msg)
+		case
+			filehashes.TaskError,
+			filehashes.TaskStarted,
+			filehashes.TaskStopped,
+			filehashes.TaskProgress:
+			// All types of messages have String(),
+			// use default output if you want.
+			log.Printf("%v", msg)
+		case filehashes.TaskDone:
+			// Done.
+			// Use customized output instead of default one.
+			log.Printf("sum done\n")
+
+			// Get hash algorithms and checksums from the message.
+			// msg is value of TaskDone(map[crypto.Hash][]byte).
+			for h, checksum := range msg {
+				str := ""
+				switch h {
+				case crypto.MD5:
+					str = "MD5: "
+				case crypto.SHA1:
+					str = "SHA1: "
+				default:
+					str = fmt.Sprintf("%d: ", h)
+				}
+
+				str += fmt.Sprintf("%X\n", checksum)
+				log.Printf(str)
+			}
+
 		default:
-			fmt.Printf("unknown message: %v", msg)
+			log.Printf("unknown message: %v", msg)
 		}
 	}
 
 	// Output:
-	//sum filehashes.go started
-	//sum filehashes.go progress: 100
-	//sum filehashes.go done:
-	//--------------------
-	//2: 7AA3A1024812C042D13BE78E50689265
-	//3: 23E1352125DACEA548FB2266E3700F22C7F68C7C
 }

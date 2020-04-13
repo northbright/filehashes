@@ -3,109 +3,69 @@ package filehashes
 import (
 	"crypto"
 	"fmt"
-	"os"
 )
 
-type MsgType uint8
-
+// Msg represents a message.
 type Msg interface {
 	String() string
 }
 
-type SumErrorMsg struct {
-	os.FileInfo
-	FilePath string
-	ErrMsg   string
+// TaskError represents the task error message.
+type TaskError string
+
+// TaskDone represents the task done message.
+type TaskDone map[crypto.Hash][]byte
+
+// TaskStarted represent the task started message.
+type TaskStarted struct{}
+
+// TaskStopped represents the task stopped message.
+type TaskStopped string
+
+// TaskProgress represents the task progress updated message.
+type TaskProgress int
+
+func newTaskError(errMsg string) Msg {
+	return TaskError(errMsg)
 }
 
-func (m *SumErrorMsg) String() string {
-	return fmt.Sprintf("sum %s error: %s\n", m.FilePath, m.ErrMsg)
+func (err TaskError) String() string {
+	return fmt.Sprintf("error: %s\n", string(err))
 }
 
-type SumDoneMsg struct {
-	os.FileInfo
-	FilePath  string
-	Checksums map[crypto.Hash][]byte
+func newTaskDone(m map[crypto.Hash][]byte) Msg {
+	return TaskDone(m)
 }
 
-func (m *SumDoneMsg) String() string {
-	str := fmt.Sprintf("sum %s done:\n--------------------\n", m.FilePath)
+func (done TaskDone) String() string {
+	str := "done\n"
 
-	for h, checksum := range m.Checksums {
+	for h, checksum := range done {
 		str += fmt.Sprintf("%v: %X\n", h, checksum)
 	}
 	return str
 }
 
-type SumStartedMsg struct {
-	os.FileInfo
-	FilePath string
+func newTaskStarted() Msg {
+	return TaskStarted{}
 }
 
-func (m *SumStartedMsg) String() string {
-	return fmt.Sprintf("sum %s started\n", m.FilePath)
+func (started TaskStarted) String() string {
+	return "started\n"
 }
 
-type SumStoppedMsg struct {
-	os.FileInfo
-	FilePath string
-	ErrMsg   string
+func newTaskStopped(errMsg string) Msg {
+	return TaskStopped(errMsg)
 }
 
-func (m *SumStoppedMsg) String() string {
-	return fmt.Sprintf("sum %s stopped: %s\n", m.FilePath, m.ErrMsg)
+func (stopped TaskStopped) String() string {
+	return fmt.Sprintf("stopped: %s\n", string(stopped))
 }
 
-type SumProgressUpdatedMsg struct {
-	os.FileInfo
-	FilePath string
-	Progress int
+func newTaskProgress(progress int) Msg {
+	return TaskProgress(progress)
 }
 
-func (m *SumProgressUpdatedMsg) String() string {
-	return fmt.Sprintf("sum %s progress: %d\n", m.FilePath, m.Progress)
-}
-
-func newSumErrorMsg(fi os.FileInfo, p string, errMsg string) *SumErrorMsg {
-	m := &SumErrorMsg{
-		fi,
-		p,
-		errMsg,
-	}
-	return m
-}
-
-func newSumDoneMsg(fi os.FileInfo, p string, checksums map[crypto.Hash][]byte) *SumDoneMsg {
-	m := &SumDoneMsg{
-		fi,
-		p,
-		checksums,
-	}
-	return m
-}
-
-func newSumStartedMsg(fi os.FileInfo, p string) *SumStartedMsg {
-	m := &SumStartedMsg{
-		fi,
-		p,
-	}
-	return m
-}
-
-func newSumStoppedMsg(fi os.FileInfo, p string, errMsg string) *SumStoppedMsg {
-	m := &SumStoppedMsg{
-		fi,
-		p,
-		errMsg,
-	}
-	return m
-}
-
-func newSumProgressUpdatedMsg(fi os.FileInfo, p string, progress int) *SumProgressUpdatedMsg {
-	m := &SumProgressUpdatedMsg{
-		fi,
-		p,
-		progress,
-	}
-	return m
+func (progress TaskProgress) String() string {
+	return fmt.Sprintf("progress: %d\n", int(progress))
 }
