@@ -13,38 +13,40 @@ import (
 
 func ExampleSum() {
 	ctx := context.Background()
-
-	ch, err := filehashes.Sum(
-		ctx,
-		filehashes.DefaultBufferSize,
+	files := []string{
+		"README.md",
 		"filehashes.go",
+		"filehashes_test.go",
+		"msg.go",
+		"FILE_NOT_EXIST",
+	}
+
+	ch := filehashes.Sum(
+		ctx,
+		filehashes.DefaultConcurrency,
+		filehashes.DefaultBufferSize,
+		files,
 		crypto.MD5,
 		crypto.SHA1,
 	)
 
-	if err != nil {
-		log.Printf("Sum error: %v", err)
-		return
-	}
-
 	for m := range ch {
 		switch msg := m.(type) {
 		case
-			filehashes.TaskError,
-			filehashes.TaskStarted,
-			filehashes.TaskStopped,
-			filehashes.TaskProgress:
-			// All types of messages have String(),
-			// use default output if you want.
+			filehashes.NoFileError,
+			filehashes.SumError,
+			filehashes.SumStarted,
+			filehashes.SumStopped,
+			filehashes.SumProgress:
+			// All types of messages have String()
 			log.Printf("%v", msg)
-		case filehashes.TaskDone:
-			// Done.
-			// Use customized output instead of default one.
-			log.Printf("sum done\n")
+		case filehashes.SumDone:
+			// Sum single file done.
+			log.Printf("sum %s done\n", msg.File)
 
 			// Get hash algorithms and checksums from the message.
-			// msg is value of TaskDone(map[crypto.Hash][]byte).
-			for h, checksum := range msg {
+			// msg is value of SumDone(map[crypto.Hash][]byte).
+			for h, checksum := range msg.Checksums {
 				str := ""
 				switch h {
 				case crypto.MD5:
@@ -57,6 +59,12 @@ func ExampleSum() {
 
 				str += fmt.Sprintf("%X\n", checksum)
 				log.Printf(str)
+			}
+		case filehashes.SumAllDone:
+			// All done.
+			log.Printf("sum all files done:\n")
+			for _, file := range msg.Files {
+				log.Printf("%s\n", file)
 			}
 
 		default:

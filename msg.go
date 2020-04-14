@@ -10,62 +10,107 @@ type Msg interface {
 	String() string
 }
 
-// TaskError represents the task error message.
-type TaskError string
+// NoFileError reprents the error of no file to sum.
+type NoFileError struct{}
 
-// TaskDone represents the task done message.
-type TaskDone map[crypto.Hash][]byte
-
-// TaskStarted represent the task started message.
-type TaskStarted struct{}
-
-// TaskStopped represents the task stopped message.
-type TaskStopped string
-
-// TaskProgress represents the task progress updated message.
-type TaskProgress int
-
-func newTaskError(errMsg string) Msg {
-	return TaskError(errMsg)
+// SumError represents the sum error message.
+type SumError struct {
+	File   string
+	ErrMsg string
 }
 
-func (err TaskError) String() string {
-	return fmt.Sprintf("error: %s\n", string(err))
+// SumDone represents the sum of single file done message.
+type SumDone struct {
+	File      string
+	Checksums map[crypto.Hash][]byte
 }
 
-func newTaskDone(m map[crypto.Hash][]byte) Msg {
-	return TaskDone(m)
+// SumAllDone represets the sum of all files done messages.
+type SumAllDone struct {
+	Files []string
 }
 
-func (done TaskDone) String() string {
-	str := "done\n"
+// SumStarted represent the sum of single file started message.
+type SumStarted struct {
+	File string
+}
 
-	for h, checksum := range done {
+// SumStopped represents the sum stopped message.
+type SumStopped struct {
+	File   string
+	ErrMsg string
+}
+
+// SumProgress represents the sum of single file progress updated message.
+type SumProgress struct {
+	File     string
+	Progress int
+}
+
+func newNoFileError() Msg {
+	return NoFileError{}
+}
+
+// String return a formated message string of NoFileError.
+func (m NoFileError) String() string {
+	return "no file to sum"
+}
+
+func newSumError(file string, errMsg string) Msg {
+	return SumError{file, errMsg}
+}
+
+// String return a formated message string of SumError.
+func (m SumError) String() string {
+	return fmt.Sprintf("sum %s error: %s\n", m.File, m.ErrMsg)
+}
+
+func newSumDone(file string, m map[crypto.Hash][]byte) Msg {
+	return SumDone{file, m}
+}
+
+// String return a formated message string of SumDone.
+func (m SumDone) String() string {
+	str := fmt.Sprintf("sum %s done\n", m.File)
+
+	for h, checksum := range m.Checksums {
 		str += fmt.Sprintf("%v: %X\n", h, checksum)
 	}
 	return str
 }
 
-func newTaskStarted() Msg {
-	return TaskStarted{}
+func newSumAllDone(files []string) Msg {
+	return SumAllDone{files}
 }
 
-func (started TaskStarted) String() string {
-	return "started\n"
+// String return a formated message string of SumAllDone.
+func (m SumAllDone) String() string {
+	return "sum all files done\n"
 }
 
-func newTaskStopped(errMsg string) Msg {
-	return TaskStopped(errMsg)
+func newSumStarted(file string) Msg {
+	return SumStarted{file}
 }
 
-func (stopped TaskStopped) String() string {
-	return fmt.Sprintf("stopped: %s\n", string(stopped))
+// String return a formated message string of SumStarted.
+func (m SumStarted) String() string {
+	return fmt.Sprintf("sum %s started\n", m.File)
 }
 
-func newTaskProgress(progress int) Msg {
-	return TaskProgress(progress)
+func newSumStopped(file string, errMsg string) Msg {
+	return SumStopped{file, errMsg}
 }
 
-func (progress TaskProgress) String() string {
-	return fmt.Sprintf("progress: %d\n", int(progress))
+// String return a formated message string of SumStopped.
+func (m SumStopped) String() string {
+	return fmt.Sprintf("sum %s stopped: %s\n", m.File, m.ErrMsg)
+}
+
+func newSumProgress(file string, progress int) Msg {
+	return SumProgress{file, progress}
+}
+
+// String return a formated message string of SumProgress.
+func (m SumProgress) String() string {
+	return fmt.Sprintf("sum %s progress: %d\n", m.File, m.Progress)
 }

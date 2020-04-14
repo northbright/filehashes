@@ -11,54 +11,101 @@ import (
 )
 
 var (
-	DefaultBufferSize = 8 * 1024 * 1024
-	ErrFileIsDir      = fmt.Errorf("file is dir")
-	ErrFileSizeIsZero = fmt.Errorf("file size is 0")
+	DefaultConcurrency = 4
+	DefaultBufferSize  = 8 * 1024 * 1024
+	ErrFileIsDir       = fmt.Errorf("file is dir")
+	ErrFileSizeIsZero  = fmt.Errorf("file size is 0")
 )
+
+func openFile(file string) (*os.File, os.FileInfo, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if fi.IsDir() {
+		return nil, nil, ErrFileIsDir
+	}
+
+	if fi.Size() == 0 {
+		return nil, nil, ErrFileSizeIsZero
+	}
+
+	return f, fi, nil
+}
 
 // Sum computes the file checksums by given hash algorithms.
 // You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
 // Sum will start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
 // you may use for - range to read the messages.
-func Sum(ctx context.Context, bufferSize int, filePath string, hashAlgs ...crypto.Hash) (<-chan Msg, error) {
+func Sum(ctx context.Context, concurrency int, bufferSize int, files []string, hashAlgs ...crypto.Hash) <-chan Msg {
 	ch := make(chan Msg)
 
-	f, err := os.Open(filePath)
+	go func() {
+		sumAll(ctx, concurrency, bufferSize, files, hashAlgs, ch)
+	}()
+
+	return ch
+}
+
+func sumAll(ctx context.Context, concurrency int, bufferSize int, files []string, hashAlgs []crypto.Hash, ch chan Msg) {
+	defer func() {
+		close(ch)
+	}()
+
+	if concurrency <= 0 {
+		concurrency = DefaultConcurrency
+	}
+
+	count := len(files)
+	if count <= 0 {
+		ch <- newNoFileError()
+		return
+	}
+
+	sem := make(chan struct{}, concurrency)
+
+	for i := 0; i < count; i++ {
+		// After first "concurrency" amount of goroutines started,
+		// It'll block starting new goroutines until one running goroutine finishs.
+		sem <- struct{}{}
+
+		go func(file string) {
+			defer func() { <-sem }()
+			// Do the work
+			sum(ctx, bufferSize, file, hashAlgs, ch)
+		}(files[i])
+	}
+
+	// After last goroutine is started,
+	// there're still "concurrency" amount of goroutines running.
+	// Make sure wait all goroutines to finish.
+	for j := 0; j < cap(sem); j++ {
+		sem <- struct{}{}
+	}
+
+	// All goroutines done.
+	ch <- newSumAllDone(files)
+}
+
+func sum(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash, ch chan Msg) {
+	f, fi, err := openFile(file)
 	if err != nil {
-		return nil, err
+		ch <- newSumError(file, err.Error())
+		return
 	}
-
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	if fi.IsDir() {
-		return nil, ErrFileIsDir
-	}
-
-	if fi.Size() == 0 {
-		return nil, ErrFileSizeIsZero
-	}
+	defer f.Close()
 
 	hashes := map[crypto.Hash]hash.Hash{}
 	for _, h := range hashAlgs {
 		hashes[h] = h.New()
 	}
-
-	go func() {
-		sum(ctx, bufferSize, filePath, fi, f, hashes, ch)
-	}()
-
-	return ch, nil
-}
-
-func sum(ctx context.Context, bufferSize int, filePath string, fi os.FileInfo, f *os.File, hashes map[crypto.Hash]hash.Hash, ch chan Msg) {
-	defer func() {
-		f.Close()
-		close(ch)
-	}()
 
 	r := bufio.NewReaderSize(f, bufferSize)
 	buf := make([]byte, bufferSize)
@@ -69,20 +116,20 @@ func sum(ctx context.Context, bufferSize int, filePath string, fi os.FileInfo, f
 	progress := 0
 
 	// Sum started.
-	ch <- newTaskStarted()
+	ch <- newSumStarted(file)
 LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			err := ctx.Err()
 			// Send stopped message.
-			ch <- newTaskStopped(err.Error())
+			ch <- newSumStopped(file, err.Error())
 			return
 		default:
 			n, err := r.Read(buf)
 			if err != nil && err != io.EOF {
 				// Send error message.
-				ch <- newTaskError(err.Error())
+				ch <- newSumError(file, err.Error())
 				return
 			}
 
@@ -101,7 +148,7 @@ LOOP:
 			progress = int(summedSize * 100 / size)
 			if progress != oldProgress {
 				// Send progress updated message.
-				ch <- newTaskProgress(progress)
+				ch <- newSumProgress(file, progress)
 				oldProgress = progress
 			}
 		}
@@ -114,5 +161,5 @@ LOOP:
 		checksums[k] = v.Sum(nil)
 	}
 
-	ch <- newTaskDone(checksums)
+	ch <- newSumDone(file, checksums)
 }
