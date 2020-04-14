@@ -18,6 +18,9 @@ func ExampleSum() {
 		"filehashes.go",
 		"filehashes_test.go",
 		"msg.go",
+		// Hashing 0-byte files is allowed.
+		"go.sum",
+		// File does not exist and you'll get error message later.
 		"FILE_NOT_EXIST",
 	}
 
@@ -30,6 +33,7 @@ func ExampleSum() {
 		crypto.SHA1,
 	)
 
+	// Consume messages.
 	for m := range ch {
 		switch msg := m.(type) {
 		case
@@ -38,7 +42,7 @@ func ExampleSum() {
 			filehashes.SumStarted,
 			filehashes.SumStopped,
 			filehashes.SumProgress:
-			// All types of messages have String()
+			// All types of messages have String().
 			log.Printf("%v", msg)
 		case filehashes.SumDone:
 			// Sum single file done.

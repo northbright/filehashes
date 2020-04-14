@@ -14,7 +14,6 @@ var (
 	DefaultConcurrency = 4
 	DefaultBufferSize  = 8 * 1024 * 1024
 	ErrFileIsDir       = fmt.Errorf("file is dir")
-	ErrFileSizeIsZero  = fmt.Errorf("file size is 0")
 )
 
 func openFile(file string) (*os.File, os.FileInfo, error) {
@@ -30,10 +29,6 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 
 	if fi.IsDir() {
 		return nil, nil, ErrFileIsDir
-	}
-
-	if fi.Size() == 0 {
-		return nil, nil, ErrFileSizeIsZero
 	}
 
 	return f, fi, nil
