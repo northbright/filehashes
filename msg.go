@@ -15,36 +15,36 @@ type NoFileError struct{}
 
 // SumError represents the sum error message.
 type SumError struct {
-	File   string
-	ErrMsg string
+	File   string `json:"file"`
+	ErrMsg string `json:"err_msg"`
 }
 
 // SumDone represents the sum of single file done message.
 type SumDone struct {
-	File      string
-	Checksums map[crypto.Hash][]byte
+	File      string                 `json:"file"`
+	Checksums map[crypto.Hash][]byte `json:"checksums"`
 }
 
 // SumAllDone represets the sum of all files done messages.
 type SumAllDone struct {
-	Files []string
+	Files []string `json:"files"`
 }
 
 // SumStarted represent the sum of single file started message.
 type SumStarted struct {
-	File string
+	File string `json:"file"`
 }
 
 // SumStopped represents the sum stopped message.
 type SumStopped struct {
-	File   string
-	ErrMsg string
+	File   string `json:"file"`
+	ErrMsg string `json:"err_msg"`
 }
 
 // SumProgress represents the sum of single file progress updated message.
 type SumProgress struct {
-	File     string
-	Progress int
+	File     string `json:"file"`
+	Progress int    `json:"progress"`
 }
 
 func newNoFileError() Msg {
