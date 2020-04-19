@@ -13,7 +13,11 @@ import (
 var (
 	DefaultConcurrency = 4
 	DefaultBufferSize  = 8 * 1024 * 1024
-	ErrFileIsDir       = fmt.Errorf("file is dir")
+	DefaultHashAlgs    = []crypto.Hash{
+		crypto.MD5,
+		crypto.SHA1,
+	}
+	ErrFileIsDir = fmt.Errorf("file is dir")
 )
 
 func openFile(file string) (*os.File, os.FileInfo, error) {
@@ -56,6 +60,11 @@ func sumAll(ctx context.Context, concurrency int, bufferSize int, hashAlgs []cry
 
 	if concurrency <= 0 {
 		concurrency = DefaultConcurrency
+	}
+
+	// Use default hash algorithms if not set.
+	if len(hashAlgs) == 0 {
+		hashAlgs = DefaultHashAlgs
 	}
 
 	count := len(files)
