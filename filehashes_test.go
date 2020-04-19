@@ -13,6 +13,12 @@ import (
 
 func ExampleSum() {
 	ctx := context.Background()
+
+	hashAlgs := []crypto.Hash{
+		crypto.MD5,
+		crypto.SHA1,
+	}
+
 	files := []string{
 		"README.md",
 		"filehashes.go",
@@ -28,9 +34,8 @@ func ExampleSum() {
 		ctx,
 		filehashes.DefaultConcurrency,
 		filehashes.DefaultBufferSize,
+		hashAlgs,
 		files,
-		crypto.MD5,
-		crypto.SHA1,
 	)
 
 	// Consume messages.

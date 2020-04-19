@@ -39,17 +39,17 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 // Sum will start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
 // you may use for - range to read the messages.
-func Sum(ctx context.Context, concurrency int, bufferSize int, files []string, hashAlgs ...crypto.Hash) <-chan Msg {
+func Sum(ctx context.Context, concurrency int, bufferSize int, hashAlgs []crypto.Hash, files []string) <-chan Msg {
 	ch := make(chan Msg)
 
 	go func() {
-		sumAll(ctx, concurrency, bufferSize, files, hashAlgs, ch)
+		sumAll(ctx, concurrency, bufferSize, hashAlgs, files, ch)
 	}()
 
 	return ch
 }
 
-func sumAll(ctx context.Context, concurrency int, bufferSize int, files []string, hashAlgs []crypto.Hash, ch chan Msg) {
+func sumAll(ctx context.Context, concurrency int, bufferSize int, hashAlgs []crypto.Hash, files []string, ch chan Msg) {
 	defer func() {
 		close(ch)
 	}()
@@ -74,7 +74,7 @@ func sumAll(ctx context.Context, concurrency int, bufferSize int, files []string
 		go func(file string) {
 			defer func() { <-sem }()
 			// Do the work
-			sum(ctx, bufferSize, file, hashAlgs, ch)
+			sum(ctx, bufferSize, hashAlgs, file, ch)
 		}(files[i])
 	}
 
@@ -89,7 +89,7 @@ func sumAll(ctx context.Context, concurrency int, bufferSize int, files []string
 	ch <- newSumAllDone(files)
 }
 
-func sum(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash, ch chan Msg) {
+func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string, ch chan Msg) {
 	f, fi, err := openFile(file)
 	if err != nil {
 		ch <- newSumError(file, err.Error())
