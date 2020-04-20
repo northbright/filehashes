@@ -43,65 +43,24 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 // Sum will start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
 // you may use for - range to read the messages.
-func Sum(ctx context.Context, concurrency int, bufferSize int, hashAlgs []crypto.Hash, files []string) <-chan Msg {
+func Sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string) <-chan Msg {
 	ch := make(chan Msg)
 
 	go func() {
-		sumAll(ctx, concurrency, bufferSize, hashAlgs, files, ch)
+		sum(ctx, bufferSize, hashAlgs, file, ch)
 	}()
 
 	return ch
 }
 
-func sumAll(ctx context.Context, concurrency int, bufferSize int, hashAlgs []crypto.Hash, files []string, ch chan Msg) {
+func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string, ch chan Msg) {
 	defer func() {
 		close(ch)
 	}()
 
-	if concurrency <= 0 {
-		concurrency = DefaultConcurrency
-	}
-
-	// Use default hash algorithms if not set.
-	if len(hashAlgs) == 0 {
-		hashAlgs = DefaultHashAlgs
-	}
-
-	count := len(files)
-	if count <= 0 {
-		ch <- newNoFileError()
-		return
-	}
-
-	sem := make(chan struct{}, concurrency)
-
-	for i := 0; i < count; i++ {
-		// After first "concurrency" amount of goroutines started,
-		// It'll block starting new goroutines until one running goroutine finishs.
-		sem <- struct{}{}
-
-		go func(file string) {
-			defer func() { <-sem }()
-			// Do the work
-			sum(ctx, bufferSize, hashAlgs, file, ch)
-		}(files[i])
-	}
-
-	// After last goroutine is started,
-	// there're still "concurrency" amount of goroutines running.
-	// Make sure wait all goroutines to finish.
-	for j := 0; j < cap(sem); j++ {
-		sem <- struct{}{}
-	}
-
-	// All goroutines done.
-	ch <- newSumAllDone(files)
-}
-
-func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string, ch chan Msg) {
 	f, fi, err := openFile(file)
 	if err != nil {
-		ch <- newSumError(file, err.Error())
+		ch <- newErrorMsg(file, err.Error())
 		return
 	}
 	defer f.Close()
@@ -120,20 +79,20 @@ func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file strin
 	progress := 0
 
 	// Sum started.
-	ch <- newSumStarted(file)
+	ch <- newSumStartedMsg(file)
 LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			err := ctx.Err()
 			// Send stopped message.
-			ch <- newSumStopped(file, err.Error())
+			ch <- newSumStoppedMsg(file, err.Error())
 			return
 		default:
 			n, err := r.Read(buf)
 			if err != nil && err != io.EOF {
 				// Send error message.
-				ch <- newSumError(file, err.Error())
+				ch <- newErrorMsg(file, err.Error())
 				return
 			}
 
@@ -152,11 +111,10 @@ LOOP:
 			progress = int(summedSize * 100 / size)
 			if progress != oldProgress {
 				// Send progress updated message.
-				ch <- newSumProgress(file, progress)
+				ch <- newSumProgressMsg(file, progress)
 				oldProgress = progress
 			}
 		}
-
 	}
 
 	// Done. Send the checksums.
@@ -165,5 +123,5 @@ LOOP:
 		checksums[k] = v.Sum(nil)
 	}
 
-	ch <- newSumDone(file, checksums)
+	ch <- newSumDoneMsg(file, checksums)
 }

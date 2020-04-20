@@ -19,37 +19,24 @@ func ExampleSum() {
 		crypto.SHA1,
 	}
 
-	files := []string{
-		"README.md",
-		"filehashes.go",
-		"filehashes_test.go",
-		"msg.go",
-		// Hashing 0-byte files is allowed.
-		"go.sum",
-		// File does not exist and you'll get error message later.
-		"FILE_NOT_EXIST",
-	}
-
 	ch := filehashes.Sum(
 		ctx,
-		filehashes.DefaultConcurrency,
 		filehashes.DefaultBufferSize,
 		hashAlgs,
-		files,
+		"README.md",
 	)
 
 	// Consume messages.
 	for m := range ch {
 		switch msg := m.(type) {
 		case
-			filehashes.NoFileError,
-			filehashes.SumError,
-			filehashes.SumStarted,
-			filehashes.SumStopped,
-			filehashes.SumProgress:
+			filehashes.ErrorMsg,
+			filehashes.SumStartedMsg,
+			filehashes.SumStoppedMsg,
+			filehashes.SumProgressMsg:
 			// All types of messages have String().
 			log.Printf("%v", msg)
-		case filehashes.SumDone:
+		case filehashes.SumDoneMsg:
 			// Sum single file done.
 			log.Printf("sum %s done\n", msg.File)
 
@@ -68,12 +55,6 @@ func ExampleSum() {
 
 				str += fmt.Sprintf("%X\n", checksum)
 				log.Printf(str)
-			}
-		case filehashes.SumAllDone:
-			// All done.
-			log.Printf("sum all files done:\n")
-			for _, file := range msg.Files {
-				log.Printf("%s\n", file)
 			}
 
 		default:

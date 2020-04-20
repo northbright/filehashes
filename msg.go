@@ -10,67 +10,53 @@ type Msg interface {
 	String() string
 }
 
-// NoFileError reprents the error of no file to sum.
-type NoFileError struct{}
+// NoFileErrorMsg reprents the error of no file to sum.
+type NoFileErrorMsg struct{}
 
-// SumError represents the sum error message.
-type SumError struct {
+// ErrorMsg represents the sum error message.
+type ErrorMsg struct {
 	File   string `json:"file"`
 	ErrMsg string `json:"err_msg"`
 }
 
-// SumDone represents the sum of single file done message.
-type SumDone struct {
+// SumDoneMsg represents the sum of single file done message.
+type SumDoneMsg struct {
 	File      string                 `json:"file"`
 	Checksums map[crypto.Hash][]byte `json:"checksums"`
 }
 
-// SumAllDone represets the sum of all files done messages.
-type SumAllDone struct {
-	Files []string `json:"files"`
-}
-
-// SumStarted represent the sum of single file started message.
-type SumStarted struct {
+// SumStartedMsg represent the sum of single file started message.
+type SumStartedMsg struct {
 	File string `json:"file"`
 }
 
-// SumStopped represents the sum stopped message.
-type SumStopped struct {
+// SumStoppedMsg represents the sum stopped message.
+type SumStoppedMsg struct {
 	File   string `json:"file"`
 	ErrMsg string `json:"err_msg"`
 }
 
-// SumProgress represents the sum of single file progress updated message.
-type SumProgress struct {
+// SumProgressMsg represents the sum of single file progress updated message.
+type SumProgressMsg struct {
 	File     string `json:"file"`
 	Progress int    `json:"progress"`
 }
 
-func newNoFileError() Msg {
-	return NoFileError{}
+func newErrorMsg(file string, errMsg string) Msg {
+	return ErrorMsg{file, errMsg}
 }
 
-// String return a formated message string of NoFileError.
-func (m NoFileError) String() string {
-	return "no file to sum"
-}
-
-func newSumError(file string, errMsg string) Msg {
-	return SumError{file, errMsg}
-}
-
-// String return a formated message string of SumError.
-func (m SumError) String() string {
+// String return a formated message string of ErrorMsg.
+func (m ErrorMsg) String() string {
 	return fmt.Sprintf("sum %s error: %s\n", m.File, m.ErrMsg)
 }
 
-func newSumDone(file string, m map[crypto.Hash][]byte) Msg {
-	return SumDone{file, m}
+func newSumDoneMsg(file string, m map[crypto.Hash][]byte) Msg {
+	return SumDoneMsg{file, m}
 }
 
-// String return a formated message string of SumDone.
-func (m SumDone) String() string {
+// String return a formated message string of SumDoneMsg.
+func (m SumDoneMsg) String() string {
 	str := fmt.Sprintf("sum %s done\n", m.File)
 
 	for h, checksum := range m.Checksums {
@@ -79,38 +65,29 @@ func (m SumDone) String() string {
 	return str
 }
 
-func newSumAllDone(files []string) Msg {
-	return SumAllDone{files}
+func newSumStartedMsg(file string) Msg {
+	return SumStartedMsg{file}
 }
 
-// String return a formated message string of SumAllDone.
-func (m SumAllDone) String() string {
-	return "sum all files done\n"
-}
-
-func newSumStarted(file string) Msg {
-	return SumStarted{file}
-}
-
-// String return a formated message string of SumStarted.
-func (m SumStarted) String() string {
+// String return a formated message string of SumStartedMsg.
+func (m SumStartedMsg) String() string {
 	return fmt.Sprintf("sum %s started\n", m.File)
 }
 
-func newSumStopped(file string, errMsg string) Msg {
-	return SumStopped{file, errMsg}
+func newSumStoppedMsg(file string, errMsg string) Msg {
+	return SumStoppedMsg{file, errMsg}
 }
 
-// String return a formated message string of SumStopped.
-func (m SumStopped) String() string {
+// String return a formated message string of SumStoppedMsg.
+func (m SumStoppedMsg) String() string {
 	return fmt.Sprintf("sum %s stopped: %s\n", m.File, m.ErrMsg)
 }
 
-func newSumProgress(file string, progress int) Msg {
-	return SumProgress{file, progress}
+func newSumProgressMsg(file string, progress int) Msg {
+	return SumProgressMsg{file, progress}
 }
 
-// String return a formated message string of SumProgress.
-func (m SumProgress) String() string {
+// String return a formated message string of SumProgressMsg.
+func (m SumProgressMsg) String() string {
 	return fmt.Sprintf("sum %s progress: %d\n", m.File, m.Progress)
 }
