@@ -10,9 +10,6 @@ type Msg interface {
 	String() string
 }
 
-// NoFileErrorMsg reprents the error of no file to sum.
-type NoFileErrorMsg struct{}
-
 // ErrorMsg represents the sum error message.
 type ErrorMsg struct {
 	File   string `json:"file"`
