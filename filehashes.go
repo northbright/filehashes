@@ -26,6 +26,15 @@ type Request struct {
 	HashAlgs []crypto.Hash `json:"hash_algs"`
 }
 
+func (req *Request) String() string {
+	str := fmt.Sprintf("file: %s(hash algs:", req.File)
+	for _, h := range req.HashAlgs {
+		str += fmt.Sprintf(" %v", h)
+	}
+	str += ")"
+	return str
+}
+
 func openFile(file string) (*os.File, os.FileInfo, error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -70,7 +79,7 @@ func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file strin
 	}
 
 	// Send sum started message.
-	req := Request{file, hashAlgs}
+	req := &Request{file, hashAlgs}
 	ch <- newSumStartedMsg(req)
 
 	// Open file.

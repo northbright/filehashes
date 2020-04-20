@@ -38,7 +38,7 @@ func ExampleSum() {
 			log.Printf("%v", msg)
 		case filehashes.SumDoneMsg:
 			// Sum single file done.
-			log.Printf("sum %s done\n", msg.File)
+			log.Printf("sum %v done\n", msg.Request)
 
 			// Get hash algorithms and checksums from the message.
 			// msg is value of SumDone(map[crypto.Hash][]byte).
