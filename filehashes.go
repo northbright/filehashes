@@ -20,6 +20,12 @@ var (
 	ErrFileIsDir = fmt.Errorf("file is dir")
 )
 
+// Request represents the request of sum a single file.
+type Request struct {
+	File     string        `json:"file"`
+	HashAlgs []crypto.Hash `json:"hash_algs"`
+}
+
 func openFile(file string) (*os.File, os.FileInfo, error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -58,9 +64,19 @@ func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file strin
 		close(ch)
 	}()
 
+	// Use default hash algorithms if it's not set.
+	if len(hashAlgs) == 0 {
+		hashAlgs = DefaultHashAlgs
+	}
+
+	// Send sum started message.
+	req := Request{file, hashAlgs}
+	ch <- newSumStartedMsg(req)
+
+	// Open file.
 	f, fi, err := openFile(file)
 	if err != nil {
-		ch <- newErrorMsg(file, err.Error())
+		ch <- newErrorMsg(req, err.Error())
 		return
 	}
 	defer f.Close()
@@ -78,21 +94,19 @@ func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file strin
 	oldProgress := 0
 	progress := 0
 
-	// Sum started.
-	ch <- newSumStartedMsg(file)
 LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			err := ctx.Err()
 			// Send stopped message.
-			ch <- newSumStoppedMsg(file, err.Error())
+			ch <- newSumStoppedMsg(req, err.Error())
 			return
 		default:
 			n, err := r.Read(buf)
 			if err != nil && err != io.EOF {
 				// Send error message.
-				ch <- newErrorMsg(file, err.Error())
+				ch <- newErrorMsg(req, err.Error())
 				return
 			}
 
@@ -111,7 +125,7 @@ LOOP:
 			progress = int(summedSize * 100 / size)
 			if progress != oldProgress {
 				// Send progress updated message.
-				ch <- newSumProgressMsg(file, progress)
+				ch <- newSumProgressMsg(req, progress)
 				oldProgress = progress
 			}
 		}
@@ -123,5 +137,5 @@ LOOP:
 		checksums[k] = v.Sum(nil)
 	}
 
-	ch <- newSumDoneMsg(file, checksums)
+	ch <- newSumDoneMsg(req, checksums)
 }
