@@ -26,6 +26,7 @@ type Request struct {
 	HashAlgs []crypto.Hash `json:"hash_algs"`
 }
 
+// String returns a formated string for request.
 func (req *Request) String() string {
 	str := fmt.Sprintf("file: %s(hash algs:", req.File)
 	for _, h := range req.HashAlgs {
