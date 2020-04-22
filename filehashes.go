@@ -48,15 +48,13 @@ func Sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file strin
 
 	go func() {
 		sum(ctx, bufferSize, hashAlgs, file, ch)
+		close(ch)
 	}()
 
 	return ch
 }
 
 func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string, ch chan Msg) {
-	defer func() {
-		close(ch)
-	}()
 
 	// Use default hash algorithms if it's not set.
 	if len(hashAlgs) == 0 {
