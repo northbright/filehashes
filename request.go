@@ -2,6 +2,7 @@ package filehashes
 
 import (
 	"crypto"
+	"crypto/md5"
 	"fmt"
 )
 
@@ -19,4 +20,15 @@ func (req *Request) String() string {
 	}
 	str += ")"
 	return str
+}
+
+// id returns the request's ID.
+// It uses md5 hash of file name and hash algorithms as the unique request ID.
+func (req *Request) id() string {
+	h := md5.New()
+	h.Write([]byte(req.File))
+	for _, alg := range req.HashAlgs {
+		h.Write([]byte(fmt.Sprintf("%d", alg)))
+	}
+	return fmt.Sprintf("%X", h.Sum(nil))
 }
