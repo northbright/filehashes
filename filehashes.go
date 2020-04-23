@@ -38,35 +38,29 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 	return f, fi, nil
 }
 
-// Sum computes the file checksums by given hash algorithms.
+// SumFile computes the file checksums by given hash algorithms.
 // You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
 // Sum will start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
 // you may use for - range to read the messages.
-func Sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string) <-chan Msg {
+func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan Msg {
 	ch := make(chan Msg)
+	req := &Request{file, hashAlgs}
 
 	go func() {
-		sum(ctx, bufferSize, hashAlgs, file, ch)
+		sum(ctx, bufferSize, req, ch)
 		close(ch)
 	}()
 
 	return ch
 }
 
-func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file string, ch chan Msg) {
-
-	// Use default hash algorithms if it's not set.
-	if len(hashAlgs) == 0 {
-		hashAlgs = DefaultHashAlgs
-	}
-
+func sum(ctx context.Context, bufferSize int, req *Request, ch chan Msg) {
 	// Send sum started message.
-	req := &Request{file, hashAlgs}
 	ch <- newSumStartedMsg(req)
 
 	// Open file.
-	f, fi, err := openFile(file)
+	f, fi, err := openFile(req.File)
 	if err != nil {
 		ch <- newErrorMsg(req, err.Error())
 		return
@@ -74,7 +68,7 @@ func sum(ctx context.Context, bufferSize int, hashAlgs []crypto.Hash, file strin
 	defer f.Close()
 
 	hashes := map[crypto.Hash]hash.Hash{}
-	for _, h := range hashAlgs {
+	for _, h := range req.HashAlgs {
 		hashes[h] = h.New()
 	}
 

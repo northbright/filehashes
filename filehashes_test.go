@@ -19,11 +19,11 @@ func ExampleSum() {
 		crypto.SHA1,
 	}
 
-	ch := filehashes.Sum(
+	ch := filehashes.SumFile(
 		ctx,
 		filehashes.DefaultBufferSize,
-		hashAlgs,
 		"README.md",
+		hashAlgs,
 	)
 
 	// Consume messages.

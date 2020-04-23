@@ -12,6 +12,15 @@ type Request struct {
 	HashAlgs []crypto.Hash `json:"hash_algs"`
 }
 
+// NewRequest returns a new request.
+// If there's no hash algorithms, use default ones.
+func NewRequest(file string, hashAlgs []crypto.Hash) *Request {
+	if len(hashAlgs) == 0 {
+		hashAlgs = DefaultHashAlgs
+	}
+	return &Request{file, hashAlgs}
+}
+
 // String returns a formated string for request.
 func (req *Request) String() string {
 	str := fmt.Sprintf("file: %s(hash algs:", req.File)
