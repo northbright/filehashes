@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto"
-	"fmt"
+	"errors"
 	"hash"
 	"io"
 	"os"
@@ -17,7 +17,9 @@ var (
 		crypto.MD5,
 		crypto.SHA1,
 	}
-	ErrFileIsDir = fmt.Errorf("file is dir")
+
+	ErrNoFileToHash = errors.New("no file to hash")
+	ErrFileIsDir    = errors.New("file is dir")
 )
 
 func openFile(file string) (*os.File, os.FileInfo, error) {
@@ -40,9 +42,16 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 
 // SumFile computes the file checksums by given hash algorithms.
 // You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
-// Sum will start a new goroutine to compoute checksums.
+// It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
-// you may use for - range to read the messages.
+// the channel will be closed after the goroutine exited.
+// You may use for - range to read the messages.
+// The messages include:
+//   SumErrorMsg: an error occurred.
+//   SumStartedMsg: sum file started.
+//   SumStoppedMsg: sum file stopped.
+//   SumProgressMsg: sum file progress updated.
+//   SumDoneMsg: sum file done. Checksums contains the results.
 func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan Msg {
 	ch := make(chan Msg)
 	req := &Request{file, hashAlgs}
@@ -55,6 +64,65 @@ func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto
 	return ch
 }
 
+// SumFiles computes the files checksums.
+// reqs are the requests which contains files and hash algorithms.
+// It'll start a new goroutine to compoute checksums.
+// It returns a channel to receive the messages,
+// the channel will be closed after the goroutine exited.
+// You may use for - range to read the messages.
+// The messages include:
+//   SumErrorMsg: an error occurred.
+//   SumStartedMsg: sum file started.
+//   SumStoppedMsg: sum file stopped.
+//   SumProgressMsg: sum file progress updated.
+//   SumDoneMsg: sum file done. Checksums contains the results.
+func SumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan Msg {
+	ch := make(chan Msg)
+
+	go func() {
+		sumFiles(ctx, concurrency, bufferSize, reqs, ch)
+		close(ch)
+	}()
+
+	return ch
+}
+
+func sumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request, ch chan Msg) {
+
+	if concurrency <= 0 {
+		concurrency = DefaultConcurrency
+	}
+
+	count := len(reqs)
+	if count <= 0 {
+		ch <- newSumErrorMsg(nil, ErrNoFileToHash)
+		return
+	}
+
+	sem := make(chan struct{}, concurrency)
+
+	for i := 0; i < count; i++ {
+		// After first "concurrency" amount of goroutines started,
+		// It'll block starting new goroutines until one running goroutine finishs.
+		sem <- struct{}{}
+
+		go func(req *Request) {
+			defer func() { <-sem }()
+			// Do the work
+			sum(ctx, bufferSize, req, ch)
+		}(reqs[i])
+	}
+
+	// After last goroutine is started,
+	// there're still "concurrency" amount of goroutines running.
+	// Make sure wait all goroutines to finish.
+	for j := 0; j < cap(sem); j++ {
+		sem <- struct{}{}
+	}
+
+	// All goroutines done.
+}
+
 func sum(ctx context.Context, bufferSize int, req *Request, ch chan Msg) {
 	// Send sum started message.
 	ch <- newSumStartedMsg(req)
@@ -62,7 +130,7 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan Msg) {
 	// Open file.
 	f, fi, err := openFile(req.File)
 	if err != nil {
-		ch <- newErrorMsg(req, err.Error())
+		ch <- newSumErrorMsg(req, err)
 		return
 	}
 	defer f.Close()
@@ -92,7 +160,7 @@ LOOP:
 			n, err := r.Read(buf)
 			if err != nil && err != io.EOF {
 				// Send error message.
-				ch <- newErrorMsg(req, err.Error())
+				ch <- newSumErrorMsg(req, err)
 				return
 			}
 

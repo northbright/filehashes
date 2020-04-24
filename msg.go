@@ -10,10 +10,9 @@ type Msg interface {
 	String() string
 }
 
-// ErrorMsg represents the sum error message.
-type ErrorMsg struct {
+type SumErrorMsg struct {
 	*Request
-	ErrMsg string `json:"err_msg"`
+	Msg string `json:"message"`
 }
 
 // SumStartedMsg represent the sum of single file started message.
@@ -39,20 +38,20 @@ type SumDoneMsg struct {
 	Checksums map[crypto.Hash][]byte `json:"checksums"`
 }
 
-func newErrorMsg(r *Request, errMsg string) Msg {
-	return ErrorMsg{r, errMsg}
+func newSumErrorMsg(r *Request, e error) Msg {
+	return &SumErrorMsg{r, e.Error()}
 }
 
-// String return a formated message string of ErrorMsg.
-func (m ErrorMsg) String() string {
-	return fmt.Sprintf("sum %v error: %s", m.Request, m.ErrMsg)
+// String returns a formated message string of SumErrorMsg.
+func (m SumErrorMsg) String() string {
+	return fmt.Sprintf("sum %v error: %s", m.Request, m.Msg)
 }
 
 func newSumStartedMsg(r *Request) Msg {
 	return SumStartedMsg{r}
 }
 
-// String return a formated message string of SumStartedMsg.
+// String returns a formated message string of SumStartedMsg.
 func (m SumStartedMsg) String() string {
 	return fmt.Sprintf("sum %v started", m.Request)
 }
@@ -61,7 +60,7 @@ func newSumStoppedMsg(r *Request, errMsg string) Msg {
 	return SumStoppedMsg{r, errMsg}
 }
 
-// String return a formated message string of SumStoppedMsg.
+// String returns a formated message string of SumStoppedMsg.
 func (m SumStoppedMsg) String() string {
 	return fmt.Sprintf("sum %v stopped", m.Request)
 }
@@ -70,7 +69,7 @@ func newSumProgressMsg(r *Request, progress int) Msg {
 	return SumProgressMsg{r, progress}
 }
 
-// String return a formated message string of SumProgressMsg.
+// String returns a formated message string of SumProgressMsg.
 func (m SumProgressMsg) String() string {
 	return fmt.Sprintf("sum %v progress: %d", m.Request, m.Progress)
 }
@@ -79,7 +78,7 @@ func newSumDoneMsg(r *Request, m map[crypto.Hash][]byte) Msg {
 	return SumDoneMsg{r, m}
 }
 
-// String return a formated message string of SumDoneMsg.
+// String returns a formated message string of SumDoneMsg.
 func (m SumDoneMsg) String() string {
 	str := fmt.Sprintf("sum %v done, hashes:", m.Request)
 
