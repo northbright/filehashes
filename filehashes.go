@@ -180,7 +180,9 @@ LOOP:
 			}
 
 			summedSize += int64(n)
-			progress = int(summedSize * 100 / size)
+			if size != 0 {
+				progress = int(summedSize * 100 / size)
+			}
 			if progress != oldProgress {
 				// Send progress updated message.
 				ch <- newSumProgressMsg(req, progress)
@@ -193,6 +195,11 @@ LOOP:
 	checksums := map[crypto.Hash][]byte{}
 	for k, v := range hashes {
 		checksums[k] = v.Sum(nil)
+	}
+
+	// Update progress for 0-size file.
+	if size == 0 {
+		ch <- newSumProgressMsg(req, 100)
 	}
 
 	ch <- newSumDoneMsg(req, checksums)
