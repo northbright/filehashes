@@ -15,7 +15,9 @@ import (
 func ExampleManager_StartSumFile() {
 	ctx := context.Background()
 
-	concurrency := filehashes.DefaultConcurrency
+	// You may set the number of concurrent worker goroutines.
+	// It's filehashes.DefaultConcurrency by default.
+	concurrency := 1
 	bufferSize := filehashes.DefaultBufferSize
 
 	man, ch := filehashes.NewManager(concurrency, bufferSize)
