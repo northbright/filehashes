@@ -10,29 +10,35 @@ type Msg interface {
 	String() string
 }
 
+// SumErrorMsg represents the error message.
 type SumErrorMsg struct {
 	*Request
 	Msg string `json:"message"`
 }
 
-// SumStartedMsg represent the sum of single file started message.
+// SumScheduledMsg represents the message that the request is scheduled.
+type SumScheduledMsg struct {
+	*Request
+}
+
+// SumStartedMsg represent the message that a file is started to sum.
 type SumStartedMsg struct {
 	*Request
 }
 
-// SumStoppedMsg represents the sum stopped message.
+// SumStoppedMsg represents the message that a file is stopped to sum.
 type SumStoppedMsg struct {
 	*Request
 	ErrMsg string `json:"err_msg"`
 }
 
-// SumProgressMsg represents the sum of single file progress updated message.
+// SumProgressMsg represents the message that progress of sum a file is updated.
 type SumProgressMsg struct {
 	*Request
 	Progress int `json:"progress"`
 }
 
-// SumDoneMsg represents the sum of single file done message.
+// SumDoneMsg represents the message that sum a file is done.
 type SumDoneMsg struct {
 	*Request
 	Checksums map[crypto.Hash][]byte `json:"checksums"`
@@ -45,6 +51,15 @@ func newSumErrorMsg(r *Request, e error) Msg {
 // String returns a formated message string of SumErrorMsg.
 func (m SumErrorMsg) String() string {
 	return fmt.Sprintf("sum %v error: %s", m.Request, m.Msg)
+}
+
+func newSumScheduledMsg(r *Request) Msg {
+	return SumScheduledMsg{r}
+}
+
+// String returns a formated message string of SumScheduledMsg.
+func (m SumScheduledMsg) String() string {
+	return fmt.Sprintf("sum %v scheduled", m.Request)
 }
 
 func newSumStartedMsg(r *Request) Msg {

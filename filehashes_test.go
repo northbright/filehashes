@@ -104,6 +104,7 @@ func ExampleSumFiles() {
 		switch msg := m.(type) {
 		case
 			filehashes.SumErrorMsg,
+			filehashes.SumScheduledMsg,
 			filehashes.SumStartedMsg,
 			filehashes.SumStoppedMsg,
 			filehashes.SumProgressMsg:

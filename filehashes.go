@@ -48,10 +48,11 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 // You may use for - range to read the messages.
 // The messages include:
 //   SumErrorMsg: an error occurred.
-//   SumStartedMsg: sum file started.
-//   SumStoppedMsg: sum file stopped.
-//   SumProgressMsg: sum file progress updated.
-//   SumDoneMsg: sum file done. Checksums contains the results.
+//   SumScheduledMsg: a file is scheduled to sum.
+//   SumStartedMsg: a file is started to sum.
+//   SumStoppedMsg: a file is stopped to sum.
+//   SumProgressMsg: the progress of sum a file is updated.
+//   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
 func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan Msg {
 	ch := make(chan Msg)
 	req := &Request{file, hashAlgs}
@@ -72,10 +73,11 @@ func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto
 // You may use for - range to read the messages.
 // The messages include:
 //   SumErrorMsg: an error occurred.
-//   SumStartedMsg: sum file started.
-//   SumStoppedMsg: sum file stopped.
-//   SumProgressMsg: sum file progress updated.
-//   SumDoneMsg: sum file done. Checksums contains the results.
+//   SumScheduledMsg: a file is scheduled to sum.
+//   SumStartedMsg: a file is started to sum.
+//   SumStoppedMsg: a file is stopped to sum.
+//   SumProgressMsg: the progress of sum a file is updated.
+//   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
 func SumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan Msg {
 	ch := make(chan Msg)
 
@@ -102,6 +104,8 @@ func sumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Requ
 	sem := make(chan struct{}, concurrency)
 
 	for i := 0; i < count; i++ {
+		ch <- newSumScheduledMsg(reqs[i])
+
 		// After first "concurrency" amount of goroutines started,
 		// It'll block starting new goroutines until one running goroutine finishs.
 		sem <- struct{}{}
