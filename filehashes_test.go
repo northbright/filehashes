@@ -11,7 +11,7 @@ import (
 	"github.com/northbright/filehashes"
 )
 
-func ExampleSumFile() {
+func ExampleStartSumFile() {
 	ctx := context.Background()
 
 	// Set buffer size.
@@ -26,8 +26,8 @@ func ExampleSumFile() {
 		crypto.SHA1,
 	}
 
-	// SumFile returns a channel to receive message.
-	ch := filehashes.SumFile(
+	// StartSumFile returns a channel to receive message.
+	ch := filehashes.StartSumFile(
 		ctx,
 		bufferSize,
 		file,
@@ -75,7 +75,7 @@ func ExampleSumFile() {
 	// Output:
 }
 
-func ExampleSumFiles() {
+func ExampleStartSumFiles() {
 	ctx := context.Background()
 	// Set sum concurrency, defalut value's filehashes.DefaultConcurrency.
 	concurrency := 2
@@ -91,8 +91,8 @@ func ExampleSumFiles() {
 		filehashes.NewRequest("go.sum", []crypto.Hash{crypto.MD5, crypto.SHA1}),
 	}
 
-	// SumFiles returns a channel to receive messages.
-	ch := filehashes.SumFiles(
+	// StartSumFiles returns a channel to receive messages.
+	ch := filehashes.StartSumFiles(
 		ctx,
 		concurrency,
 		bufferSize,

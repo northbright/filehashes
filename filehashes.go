@@ -40,7 +40,7 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 	return f, fi, nil
 }
 
-// SumFile computes the file checksums by given hash algorithms.
+// StartSumFile starts to compute checksums of a file by given hash algorithms.
 // You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
@@ -53,7 +53,7 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 //   SumStoppedMsg: a file is stopped to sum.
 //   SumProgressMsg: the progress of sum a file is updated.
 //   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
-func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan Msg {
+func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan Msg {
 	ch := make(chan Msg)
 	req := &Request{file, hashAlgs}
 
@@ -65,7 +65,7 @@ func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto
 	return ch
 }
 
-// SumFiles computes the files checksums.
+// StartSumFiles starts to computes checksums of files.
 // reqs are the requests which contains files and hash algorithms.
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
@@ -78,7 +78,7 @@ func SumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto
 //   SumStoppedMsg: a file is stopped to sum.
 //   SumProgressMsg: the progress of sum a file is updated.
 //   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
-func SumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan Msg {
+func StartSumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan Msg {
 	ch := make(chan Msg)
 
 	go func() {
