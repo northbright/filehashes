@@ -50,3 +50,16 @@ func (m *Manager) StartSumFile(ctx context.Context, req *Request) {
 		<-m.sem
 	}()
 }
+
+// StartSumFiles starts to sum files by given requests.
+func (m *Manager) StartSumFiles(ctx context.Context, reqs []*Request) {
+	for _, req := range reqs {
+		go func(req *Request) {
+			m.ch <- newSumScheduledMsg(req)
+
+			m.sem <- struct{}{}
+			sum(ctx, m.bufferSize, req, m.ch)
+			<-m.sem
+		}(req)
+	}
+}

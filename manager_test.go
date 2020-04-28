@@ -12,7 +12,7 @@ import (
 	"github.com/northbright/filehashes"
 )
 
-func ExampleManager_StartSumFile() {
+func ExampleManager_StartSumFiles() {
 	ctx := context.Background()
 
 	// You may set the number of concurrent worker goroutines.
@@ -30,12 +30,8 @@ func ExampleManager_StartSumFile() {
 		filehashes.NewRequest("go.sum", []crypto.Hash{crypto.MD5, crypto.SHA1}),
 	}
 
-	for _, req := range reqs {
-		go func(req *filehashes.Request) {
-			// Start sum file.
-			man.StartSumFile(ctx, req)
-		}(req)
-	}
+	// Start to sum files.
+	man.StartSumFiles(ctx, reqs)
 
 	// Create a timeout to exit.
 	chTimeout := time.After(5 * time.Second)
