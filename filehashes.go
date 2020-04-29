@@ -156,9 +156,8 @@ LOOP:
 	for {
 		select {
 		case <-ctx.Done():
-			err := ctx.Err()
 			// Send stopped message.
-			ch <- newSumStoppedMsg(req, err.Error())
+			ch <- newSumStoppedMsg(req)
 			return
 		default:
 			n, err := r.Read(buf)

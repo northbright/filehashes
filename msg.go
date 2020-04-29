@@ -13,7 +13,7 @@ type Msg interface {
 // SumErrorMsg represents the error message.
 type SumErrorMsg struct {
 	*Request
-	Msg string `json:"message"`
+	Message string `json:"message"`
 }
 
 // SumScheduledMsg represents the message that the request is scheduled.
@@ -29,7 +29,6 @@ type SumStartedMsg struct {
 // SumStoppedMsg represents the message that a file is stopped to sum.
 type SumStoppedMsg struct {
 	*Request
-	ErrMsg string `json:"err_msg"`
 }
 
 // SumProgressMsg represents the message that progress of sum a file is updated.
@@ -50,7 +49,7 @@ func newSumErrorMsg(r *Request, e error) Msg {
 
 // String returns a formated message string of SumErrorMsg.
 func (m SumErrorMsg) String() string {
-	return fmt.Sprintf("sum %v error: %s", m.Request, m.Msg)
+	return fmt.Sprintf("sum %v error: %s", m.Request, m.Message)
 }
 
 func newSumScheduledMsg(r *Request) Msg {
@@ -71,8 +70,8 @@ func (m SumStartedMsg) String() string {
 	return fmt.Sprintf("sum %v started", m.Request)
 }
 
-func newSumStoppedMsg(r *Request, errMsg string) Msg {
-	return SumStoppedMsg{r, errMsg}
+func newSumStoppedMsg(r *Request) Msg {
+	return SumStoppedMsg{r}
 }
 
 // String returns a formated message string of SumStoppedMsg.
