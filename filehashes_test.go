@@ -36,37 +36,34 @@ func ExampleStartSumFile() {
 
 	// Consume messages.
 	for m := range ch {
-		switch msg := m.(type) {
-		case
-			filehashes.SumErrorMsg,
-			filehashes.SumStartedMsg,
-			filehashes.SumStoppedMsg,
-			filehashes.SumProgressMsg:
-			// All types of messages have String().
-			log.Printf("%v", msg)
-		case filehashes.SumDoneMsg:
-			// Sum single file done.
-			log.Printf("sum %v done\n", msg.Request)
+		switch m.Type {
+		case filehashes.ERROR,
+			filehashes.SCHEDULED,
+			filehashes.STARTED,
+			filehashes.STOPPED,
+			filehashes.PROGRESSUPDATED:
+			log.Printf("message: %v", m)
+		case filehashes.DONE:
+			switch checksums := m.Data.(type) {
+			case map[crypto.Hash][]byte:
+				for h, checksum := range checksums {
+					str := ""
+					switch h {
+					case crypto.MD5:
+						str = "MD5: "
+					case crypto.SHA1:
+						str = "SHA1: "
+					default:
+						str = fmt.Sprintf("%d: ", h)
+					}
 
-			// Get hash algorithms and checksums from the message.
-			// msg is value of SumDone(map[crypto.Hash][]byte).
-			for h, checksum := range msg.Checksums {
-				str := ""
-				switch h {
-				case crypto.MD5:
-					str = "MD5: "
-				case crypto.SHA1:
-					str = "SHA1: "
-				default:
-					str = fmt.Sprintf("%d: ", h)
+					str += fmt.Sprintf("%X\n", checksum)
+					log.Printf(str)
 				}
-
-				str += fmt.Sprintf("%X\n", checksum)
-				log.Printf(str)
 			}
 
 		default:
-			log.Printf("unknown message: %v", msg)
+			log.Printf("unknown message: %v", m)
 		}
 	}
 	// sum goroutine exited.
@@ -101,39 +98,34 @@ func ExampleStartSumFiles() {
 
 	// Consume messages.
 	for m := range ch {
-		switch msg := m.(type) {
-		case
-			filehashes.SumErrorMsg,
-			filehashes.SumScheduledMsg,
-			filehashes.SumStartedMsg,
-			filehashes.SumStoppedMsg,
-			filehashes.SumProgressMsg:
-			// All types of messages have String().
-			log.Printf("%v", msg)
+		switch m.Type {
+		case filehashes.ERROR,
+			filehashes.SCHEDULED,
+			filehashes.STARTED,
+			filehashes.STOPPED,
+			filehashes.PROGRESSUPDATED:
+			log.Printf("message: %v", m)
+		case filehashes.DONE:
+			switch checksums := m.Data.(type) {
+			case map[crypto.Hash][]byte:
+				for h, checksum := range checksums {
+					str := ""
+					switch h {
+					case crypto.MD5:
+						str = "MD5: "
+					case crypto.SHA1:
+						str = "SHA1: "
+					default:
+						str = fmt.Sprintf("%d: ", h)
+					}
 
-		case filehashes.SumDoneMsg:
-			// Sum single file done.
-			log.Printf("sum %v done\n", msg.Request)
-
-			// Get hash algorithms and checksums from the message.
-			// msg is value of SumDone(map[crypto.Hash][]byte).
-			for h, checksum := range msg.Checksums {
-				str := ""
-				switch h {
-				case crypto.MD5:
-					str = "MD5: "
-				case crypto.SHA1:
-					str = "SHA1: "
-				default:
-					str = fmt.Sprintf("%d: ", h)
+					str += fmt.Sprintf("%X\n", checksum)
+					log.Printf(str)
 				}
-
-				str += fmt.Sprintf("%X\n", checksum)
-				log.Printf(str)
 			}
 
 		default:
-			log.Printf("unknown message: %v", msg)
+			log.Printf("unknown message: %v", m)
 		}
 	}
 	// sum goroutine exited.

@@ -9,19 +9,19 @@ type Manager struct {
 	concurrency int
 	bufferSize  int
 	sem         chan struct{}
-	ch          chan Msg
+	ch          chan *Message
 }
 
 // NewManager creates a new manager and returns a channel to receive the messages.
 // The channel will not be closed.
 // The messages include:
-//   SumErrorMsg: an error occurred.
-//   SumScheduledMsg: a file is scheduled to sum.
-//   SumStartedMsg: a file is started to sum.
-//   SumStoppedMsg: a file is stopped to sum.
-//   SumProgressMsg: the progress of sum a file is updated.
-//   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
-func NewManager(concurrency int, bufferSize int) (*Manager, <-chan Msg) {
+//   SumError* Message: an error occurred.
+//   SumScheduled* Message: a file is scheduled to sum.
+//   SumStarted* Message: a file is started to sum.
+//   SumStopped* Message: a file is stopped to sum.
+//   SumProgress* Message: the progress of sum a file is updated.
+//   SumDone* Message: it's done to sum a file done. Checksums contains the results.
+func NewManager(concurrency int, bufferSize int) (*Manager, <-chan *Message) {
 
 	if concurrency <= 0 {
 		concurrency = DefaultConcurrency
@@ -35,7 +35,7 @@ func NewManager(concurrency int, bufferSize int) (*Manager, <-chan Msg) {
 		concurrency,
 		bufferSize,
 		make(chan struct{}, concurrency),
-		make(chan Msg),
+		make(chan *Message),
 	}
 	return m, m.ch
 }
@@ -43,7 +43,7 @@ func NewManager(concurrency int, bufferSize int) (*Manager, <-chan Msg) {
 // StartSumFile starts to sum a file by given request.
 func (m *Manager) StartSumFile(ctx context.Context, req *Request) {
 	go func() {
-		m.ch <- newSumScheduledMsg(req)
+		m.ch <- newMessage(SCHEDULED, req, nil)
 
 		m.sem <- struct{}{}
 		sum(ctx, m.bufferSize, req, m.ch)
@@ -55,7 +55,7 @@ func (m *Manager) StartSumFile(ctx context.Context, req *Request) {
 func (m *Manager) StartSumFiles(ctx context.Context, reqs []*Request) {
 	for _, req := range reqs {
 		go func(req *Request) {
-			m.ch <- newSumScheduledMsg(req)
+			m.ch <- newMessage(SCHEDULED, req, nil)
 
 			m.sem <- struct{}{}
 			sum(ctx, m.bufferSize, req, m.ch)

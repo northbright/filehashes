@@ -47,14 +47,14 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 // the channel will be closed after the goroutine exited.
 // You may use for - range to read the messages.
 // The messages include:
-//   SumErrorMsg: an error occurred.
-//   SumScheduledMsg: a file is scheduled to sum.
-//   SumStartedMsg: a file is started to sum.
-//   SumStoppedMsg: a file is stopped to sum.
-//   SumProgressMsg: the progress of sum a file is updated.
-//   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
-func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan Msg {
-	ch := make(chan Msg)
+//   SumErrorMessage: an error occurred.
+//   SumScheduledMessage: a file is scheduled to sum.
+//   SumStartedMessage: a file is started to sum.
+//   SumStoppedMessage: a file is stopped to sum.
+//   SumProgressMessage: the progress of sum a file is updated.
+//   SumDoneMessage: it's done to sum a file done. Checksums contains the results.
+func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan *Message {
+	ch := make(chan *Message)
 	req := &Request{file, hashAlgs}
 
 	go func() {
@@ -71,15 +71,8 @@ func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []c
 // It returns a channel to receive the messages,
 // the channel will be closed after the goroutine exited.
 // You may use for - range to read the messages.
-// The messages include:
-//   SumErrorMsg: an error occurred.
-//   SumScheduledMsg: a file is scheduled to sum.
-//   SumStartedMsg: a file is started to sum.
-//   SumStoppedMsg: a file is stopped to sum.
-//   SumProgressMsg: the progress of sum a file is updated.
-//   SumDoneMsg: it's done to sum a file done. Checksums contains the results.
-func StartSumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan Msg {
-	ch := make(chan Msg)
+func StartSumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan *Message {
+	ch := make(chan *Message)
 
 	go func() {
 		sumFiles(ctx, concurrency, bufferSize, reqs, ch)
@@ -89,7 +82,7 @@ func StartSumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []
 	return ch
 }
 
-func sumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request, ch chan Msg) {
+func sumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request, ch chan *Message) {
 
 	if concurrency <= 0 {
 		concurrency = DefaultConcurrency
@@ -97,14 +90,14 @@ func sumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Requ
 
 	count := len(reqs)
 	if count <= 0 {
-		ch <- newSumErrorMsg(nil, ErrNoFileToHash)
+		ch <- newMessage(ERROR, nil, ErrNoFileToHash.Error())
 		return
 	}
 
 	sem := make(chan struct{}, concurrency)
 
 	for i := 0; i < count; i++ {
-		ch <- newSumScheduledMsg(reqs[i])
+		ch <- newMessage(SCHEDULED, reqs[i], nil)
 
 		// After first "concurrency" amount of goroutines started,
 		// It'll block starting new goroutines until one running goroutine finishs.
@@ -127,14 +120,14 @@ func sumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Requ
 	// All goroutines done.
 }
 
-func sum(ctx context.Context, bufferSize int, req *Request, ch chan Msg) {
+func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 	// Send sum started message.
-	ch <- newSumStartedMsg(req)
+	ch <- newMessage(STARTED, req, nil)
 
 	// Open file.
 	f, fi, err := openFile(req.File)
 	if err != nil {
-		ch <- newSumErrorMsg(req, err)
+		ch <- newMessage(ERROR, req, err.Error())
 		return
 	}
 	defer f.Close()
@@ -157,13 +150,13 @@ LOOP:
 		select {
 		case <-ctx.Done():
 			// Send stopped message.
-			ch <- newSumStoppedMsg(req)
+			ch <- newMessage(STOPPED, req, ctx.Err().Error())
 			return
 		default:
 			n, err := r.Read(buf)
 			if err != nil && err != io.EOF {
 				// Send error message.
-				ch <- newSumErrorMsg(req, err)
+				ch <- newMessage(ERROR, req, err.Error())
 				return
 			}
 
@@ -184,7 +177,7 @@ LOOP:
 			}
 			if progress != oldProgress {
 				// Send progress updated message.
-				ch <- newSumProgressMsg(req, progress)
+				ch <- newMessage(PROGRESSUPDATED, req, progress)
 				oldProgress = progress
 			}
 		}
@@ -198,8 +191,8 @@ LOOP:
 
 	// Update progress for 0-size file.
 	if size == 0 {
-		ch <- newSumProgressMsg(req, 100)
+		ch <- newMessage(PROGRESSUPDATED, req, 100)
 	}
 
-	ch <- newSumDoneMsg(req, checksums)
+	ch <- newMessage(DONE, req, checksums)
 }
