@@ -33,7 +33,7 @@ type Message struct {
 	// TypeStr is the type in string.
 	TypeStr string `json:"type_str"`
 	// Req is the request of sum a file.
-	Req *Request `json:"request"`
+	Req *Request `json:"request,omitempty"`
 	// Data stores the data of message.
 	// Each type has its own data type.
 	// Error: data is a string to store error message.
@@ -41,7 +41,7 @@ type Message struct {
 	// Stopped: data is a string to store the reason of stopped.
 	// ProgressUpdated: data is a int to store the percent(0 - 100).
 	// Done: data is a map[crypto.Hash][]byte to store the checksums.
-	Data interface{} `json:"data"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 // newMessage returns a new message.
