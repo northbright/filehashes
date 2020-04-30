@@ -14,13 +14,6 @@ type Manager struct {
 
 // NewManager creates a new manager and returns a channel to receive the messages.
 // The channel will not be closed.
-// The messages include:
-//   SumError* Message: an error occurred.
-//   SumScheduled* Message: a file is scheduled to sum.
-//   SumStarted* Message: a file is started to sum.
-//   SumStopped* Message: a file is stopped to sum.
-//   SumProgress* Message: the progress of sum a file is updated.
-//   SumDone* Message: it's done to sum a file done. Checksums contains the results.
 func NewManager(concurrency int, bufferSize int) (*Manager, <-chan *Message) {
 
 	if concurrency <= 0 {

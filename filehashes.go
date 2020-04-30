@@ -46,13 +46,6 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 // It returns a channel to receive the messages,
 // the channel will be closed after the goroutine exited.
 // You may use for - range to read the messages.
-// The messages include:
-//   SumErrorMessage: an error occurred.
-//   SumScheduledMessage: a file is scheduled to sum.
-//   SumStartedMessage: a file is started to sum.
-//   SumStoppedMessage: a file is stopped to sum.
-//   SumProgressMessage: the progress of sum a file is updated.
-//   SumDoneMessage: it's done to sum a file done. Checksums contains the results.
 func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan *Message {
 	ch := make(chan *Message)
 	req := &Request{file, hashAlgs}
