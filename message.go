@@ -36,11 +36,13 @@ type Message struct {
 	Req *Request `json:"request,omitempty"`
 	// Data stores the data of message.
 	// Each type has its own data type.
-	// Error: data is a string to store error message.
-	// Scheduled: data is nil.
-	// Stopped: data is a string to store the reason of stopped.
-	// ProgressUpdated: data is a int to store the percent(0 - 100).
-	// Done: data is a map[crypto.Hash][]byte to store the checksums.
+	//
+	// ERROR: data is a string to store error message.
+	// SCHEDULED: data is nil.
+	// STARTED: data is nil.
+	// STOPPED: data is a string to store the reason of stopped.
+	// PROGRESSUPDATED: data is a int to store the percent(0 - 100).
+	// DONE: data is a map[crypto.Hash][]byte to store the checksums.
 	Data interface{} `json:"data,omitempty"`
 }
 
