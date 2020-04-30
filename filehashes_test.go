@@ -11,7 +11,29 @@ import (
 	"github.com/northbright/filehashes"
 )
 
-func ConsumeMessages(ch <-chan *filehashes.Message) {
+func ExampleStartSumFile() {
+	ctx := context.Background()
+
+	// Set buffer size.
+	bufferSize := filehashes.DefaultBufferSize
+
+	// Specify the file to hash.
+	file := "README.md"
+
+	// Specify the hash algorithm(s).
+	hashAlgs := []crypto.Hash{
+		crypto.MD5,
+		crypto.SHA1,
+	}
+
+	// StartSumFile returns a channel to receive message.
+	ch := filehashes.StartSumFile(
+		ctx,
+		bufferSize,
+		file,
+		hashAlgs,
+	)
+
 	// Consume messages.
 	for m := range ch {
 		switch m.Type {
@@ -44,67 +66,6 @@ func ConsumeMessages(ch <-chan *filehashes.Message) {
 			log.Printf("unknown message: %v", m)
 		}
 	}
-}
-
-func ExampleStartSumFile() {
-	ctx := context.Background()
-
-	// Set buffer size.
-	bufferSize := filehashes.DefaultBufferSize
-
-	// Specify the file to hash.
-	file := "README.md"
-
-	// Specify the hash algorithm(s).
-	hashAlgs := []crypto.Hash{
-		crypto.MD5,
-		crypto.SHA1,
-	}
-
-	// StartSumFile returns a channel to receive message.
-	ch := filehashes.StartSumFile(
-		ctx,
-		bufferSize,
-		file,
-		hashAlgs,
-	)
-
-	ConsumeMessages(ch)
-
-	/*
-		// Consume messages.
-		for m := range ch {
-			switch m.Type {
-			case filehashes.ERROR,
-				filehashes.SCHEDULED,
-				filehashes.STARTED,
-				filehashes.STOPPED,
-				filehashes.PROGRESSUPDATED:
-				log.Printf("message: %v", m)
-			case filehashes.DONE:
-				switch checksums := m.Data.(type) {
-				case map[crypto.Hash][]byte:
-					for h, checksum := range checksums {
-						str := ""
-						switch h {
-						case crypto.MD5:
-							str = "MD5: "
-						case crypto.SHA1:
-							str = "SHA1: "
-						default:
-							str = fmt.Sprintf("%d: ", h)
-						}
-
-						str += fmt.Sprintf("%X\n", checksum)
-						log.Printf(str)
-					}
-				}
-
-			default:
-				log.Printf("unknown message: %v", m)
-			}
-		}
-	*/
 
 	// sum goroutine exited.
 	log.Printf("sum goroutine exited")
@@ -136,41 +97,39 @@ func ExampleStartSumFiles() {
 		reqs,
 	)
 
-	ConsumeMessages(ch)
-	/*
-		// Consume messages.
-		for m := range ch {
-			switch m.Type {
-			case filehashes.ERROR,
-				filehashes.SCHEDULED,
-				filehashes.STARTED,
-				filehashes.STOPPED,
-				filehashes.PROGRESSUPDATED:
-				log.Printf("message: %v", m)
-			case filehashes.DONE:
-				switch checksums := m.Data.(type) {
-				case map[crypto.Hash][]byte:
-					for h, checksum := range checksums {
-						str := ""
-						switch h {
-						case crypto.MD5:
-							str = "MD5: "
-						case crypto.SHA1:
-							str = "SHA1: "
-						default:
-							str = fmt.Sprintf("%d: ", h)
-						}
-
-						str += fmt.Sprintf("%X\n", checksum)
-						log.Printf(str)
+	// Consume messages.
+	for m := range ch {
+		switch m.Type {
+		case filehashes.ERROR,
+			filehashes.SCHEDULED,
+			filehashes.STARTED,
+			filehashes.STOPPED,
+			filehashes.PROGRESSUPDATED:
+			log.Printf("message: %v", m)
+		case filehashes.DONE:
+			switch checksums := m.Data.(type) {
+			case map[crypto.Hash][]byte:
+				for h, checksum := range checksums {
+					str := ""
+					switch h {
+					case crypto.MD5:
+						str = "MD5: "
+					case crypto.SHA1:
+						str = "SHA1: "
+					default:
+						str = fmt.Sprintf("%d: ", h)
 					}
-				}
 
-			default:
-				log.Printf("unknown message: %v", m)
+					str += fmt.Sprintf("%X\n", checksum)
+					log.Printf(str)
+				}
 			}
+
+		default:
+			log.Printf("unknown message: %v", m)
 		}
-	*/
+	}
+
 	// sum goroutine exited.
 	log.Printf("sum goroutine exited")
 
