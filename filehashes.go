@@ -127,7 +127,9 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 
 	hashes := map[crypto.Hash]hash.Hash{}
 	for _, h := range req.HashAlgs {
-		hashes[h] = h.New()
+		if h.Available() {
+			hashes[h] = h.New()
+		}
 	}
 
 	r := bufio.NewReaderSize(f, bufferSize)
