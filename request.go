@@ -13,8 +13,5 @@ type Request struct {
 // NewRequest returns a new request.
 // If there's no hash algorithms, use default ones.
 func NewRequest(file string, hashAlgs []crypto.Hash) *Request {
-	if len(hashAlgs) == 0 {
-		hashAlgs = DefaultHashAlgs
-	}
 	return &Request{file, hashAlgs}
 }

@@ -14,12 +14,9 @@ import (
 var (
 	DefaultConcurrency = 4
 	DefaultBufferSize  = 8 * 1024 * 1024
-	DefaultHashAlgs    = []crypto.Hash{
-		crypto.MD5,
-		crypto.SHA1,
-	}
 
 	ErrNoFileToHash = errors.New("no file to hash")
+	ErrNoHashAlgs   = errors.New("no hash algorithms")
 	ErrFileIsDir    = errors.New("file is dir")
 )
 
@@ -125,6 +122,12 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 		return
 	}
 	defer f.Close()
+
+	// Check hash algorithms.
+	if len(req.HashAlgs) == 0 {
+		ch <- newMessage(ERROR, req, ErrNoHashAlgs.Error())
+		return
+	}
 
 	hashes := map[crypto.Hash]hash.Hash{}
 	for _, h := range req.HashAlgs {
