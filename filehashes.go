@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"os"
@@ -179,9 +180,9 @@ LOOP:
 	}
 
 	// Done. Send the checksums.
-	checksums := map[crypto.Hash][]byte{}
+	checksums := map[crypto.Hash]string{}
 	for k, v := range hashes {
-		checksums[k] = v.Sum(nil)
+		checksums[k] = fmt.Sprintf("%X", v.Sum(nil))
 	}
 
 	// Update progress for 0-size file.

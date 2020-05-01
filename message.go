@@ -1,5 +1,9 @@
 package filehashes
 
+import (
+	"encoding/json"
+)
+
 // MessageType represents the type of messages.
 type MessageType uint
 
@@ -42,7 +46,7 @@ type Message struct {
 	// STARTED: data is nil.
 	// STOPPED: data is a string to store the reason of stopped.
 	// PROGRESSUPDATED: data is a int to store the percent(0 - 100).
-	// DONE: data is a map[crypto.Hash][]byte to store the checksums.
+	// DONE: data is a map[crypto.Hash]string to store the checksums.
 	Data interface{} `json:"data,omitempty"`
 }
 
@@ -55,4 +59,12 @@ func newMessage(t MessageType, req *Request, data interface{}) *Message {
 	}
 
 	return &Message{t, typeStr, req, data}
+}
+
+// JSON serializes a message as JSON.
+// All types of messages are JSON-friendly.
+// To get the meaning of Message.Data for different types of messages,
+// check comments of Message struct.
+func (m *Message) JSON() ([]byte, error) {
+	return json.Marshal(m)
 }

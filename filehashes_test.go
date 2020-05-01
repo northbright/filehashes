@@ -5,7 +5,6 @@ import (
 	"crypto"
 	_ "crypto/md5"
 	_ "crypto/sha1"
-	"fmt"
 	"log"
 
 	"github.com/northbright/filehashes"
@@ -41,27 +40,10 @@ func ExampleStartSumFile() {
 			filehashes.SCHEDULED,
 			filehashes.STARTED,
 			filehashes.STOPPED,
-			filehashes.PROGRESSUPDATED:
-			log.Printf("message: %v", m)
-		case filehashes.DONE:
-			switch checksums := m.Data.(type) {
-			case map[crypto.Hash][]byte:
-				for h, checksum := range checksums {
-					str := ""
-					switch h {
-					case crypto.MD5:
-						str = "MD5: "
-					case crypto.SHA1:
-						str = "SHA1: "
-					default:
-						str = fmt.Sprintf("%d: ", h)
-					}
-
-					str += fmt.Sprintf("%X\n", checksum)
-					log.Printf(str)
-				}
-			}
-
+			filehashes.PROGRESSUPDATED,
+			filehashes.DONE:
+			buf, _ := m.JSON()
+			log.Printf("message: %v", string(buf))
 		default:
 			log.Printf("unknown message: %v", m)
 		}
@@ -104,27 +86,30 @@ func ExampleStartSumFiles() {
 			filehashes.SCHEDULED,
 			filehashes.STARTED,
 			filehashes.STOPPED,
-			filehashes.PROGRESSUPDATED:
-			log.Printf("message: %v", m)
-		case filehashes.DONE:
-			switch checksums := m.Data.(type) {
-			case map[crypto.Hash][]byte:
-				for h, checksum := range checksums {
-					str := ""
-					switch h {
-					case crypto.MD5:
-						str = "MD5: "
-					case crypto.SHA1:
-						str = "SHA1: "
-					default:
-						str = fmt.Sprintf("%d: ", h)
+			filehashes.PROGRESSUPDATED,
+			filehashes.DONE:
+			buf, _ := m.JSON()
+			log.Printf("message: %v", string(buf))
+		/*
+			case filehashes.DONE:
+				switch checksums := m.Data.(type) {
+				case map[crypto.Hash][]byte:
+					for h, checksum := range checksums {
+						str := ""
+						switch h {
+						case crypto.MD5:
+							str = "MD5: "
+						case crypto.SHA1:
+							str = "SHA1: "
+						default:
+							str = fmt.Sprintf("%d: ", h)
+						}
+
+						str += fmt.Sprintf("%X\n", checksum)
+						log.Printf(str)
 					}
-
-					str += fmt.Sprintf("%X\n", checksum)
-					log.Printf(str)
 				}
-			}
-
+		*/
 		default:
 			log.Printf("unknown message: %v", m)
 		}
