@@ -6,6 +6,8 @@
 !LICENSE
 !*.md
 !*.go
+!go.mod
+!go.sum
 !*.json
 !.travis.yml
 !*.pem
