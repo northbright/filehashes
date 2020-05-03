@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto"
+	_ "crypto/md5"
+	_ "crypto/sha1"
 	"encoding/json"
 	"flag"
 	"html/template"
@@ -93,7 +96,25 @@ func shutdown(w http.ResponseWriter, r *http.Request) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/ws")
+	reqs := []*filehashes.Request{
+		filehashes.NewRequest(
+			"../../filehashes.go",
+			[]crypto.Hash{
+				crypto.MD5,
+				crypto.SHA1,
+			}),
+	}
+	buf, _ := json.Marshal(reqs)
+
+	data := struct {
+		Addr     string
+		ReqsJSON string
+	}{
+		"ws://" + r.Host + "/ws",
+		string(buf),
+	}
+
+	homeTemplate.Execute(w, data)
 }
 
 func main() {
@@ -161,7 +182,7 @@ window.addEventListener("load", function(evt) {
         if (ws) {
             return false;
         }
-        ws = new WebSocket("{{.}}");
+        ws = new WebSocket("{{ .Addr }}");
         ws.onopen = function(evt) {
             print("OPEN");
         }
@@ -205,7 +226,7 @@ You can change the message and send multiple times.
 <form>
 <button id="open">Open</button>
 <button id="close">Close</button>
-<p><input id="input" type="text" value="Hello world!">
+<p><input id="input" type="text" value="{{ .ReqsJSON }}">
 <button id="send">Send</button>
 </form>
 </td><td valign="top" width="50%">
