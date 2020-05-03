@@ -5,6 +5,7 @@ import (
 	"crypto"
 	_ "crypto/md5"
 	_ "crypto/sha1"
+	_ "crypto/sha256"
 	"log"
 
 	"github.com/northbright/filehashes"
@@ -23,6 +24,7 @@ func ExampleStartSumFile() {
 	hashAlgs := []crypto.Hash{
 		crypto.MD5,
 		crypto.SHA1,
+		crypto.SHA256,
 	}
 
 	// StartSumFile returns a channel to receive message.

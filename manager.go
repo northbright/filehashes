@@ -34,13 +34,12 @@ func NewManager(concurrency int, bufferSize int) (*Manager, <-chan *Message) {
 }
 
 // StartSumFile starts to sum a file by given request.
-// Caller should import(register) coressponding hash function packages.
+// Caller should import hash function packages for the hash algorithms,
+// or it'll panic due to not linking the libraries.
 // e.g.
 // import (
 //   _ "crypto/md5"
 //   _ "crypto/sha1"
-//   _ "crypto/sha256"
-// ...
 // )
 func (m *Manager) StartSumFile(ctx context.Context, req *Request) {
 	go func() {
@@ -53,13 +52,12 @@ func (m *Manager) StartSumFile(ctx context.Context, req *Request) {
 }
 
 // StartSumFiles starts to sum files by given requests.
-// Caller should import(register) coressponding hash function packages.
+// Caller should import hash function packages for the hash algorithms,
+// or it'll panic due to not linking the libraries.
 // e.g.
 // import (
 //   _ "crypto/md5"
 //   _ "crypto/sha1"
-//   _ "crypto/sha256"
-// ...
 // )
 func (m *Manager) StartSumFiles(ctx context.Context, reqs []*Request) {
 	for _, req := range reqs {

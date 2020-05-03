@@ -40,13 +40,12 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 
 // StartSumFile starts to compute checksums of a file by given hash algorithms.
 // You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
-// Caller should import(register) coressponding hash function packages.
+// Caller should import hash function packages for the hash algorithms,
+// or it'll panic due to not linking the libraries.
 // e.g.
 // import (
 //   _ "crypto/md5"
 //   _ "crypto/sha1"
-//   _ "crypto/sha256"
-// ...
 // )
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
@@ -66,13 +65,12 @@ func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []c
 
 // StartSumFiles starts to computes checksums of files.
 // reqs are the requests which contains files and hash algorithms.
-// Caller should import(register) coressponding hash function packages.
+// Caller should import hash function packages for the hash algorithms,
+// or it'll panic due to not linking the libraries.
 // e.g.
 // import (
 //   _ "crypto/md5"
 //   _ "crypto/sha1"
-//   _ "crypto/sha256"
-// ...
 // )
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
