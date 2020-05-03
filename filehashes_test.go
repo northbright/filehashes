@@ -92,26 +92,6 @@ func ExampleStartSumFiles() {
 			filehashes.DONE:
 			buf, _ := m.JSON()
 			log.Printf("message: %v", string(buf))
-		/*
-			case filehashes.DONE:
-				switch checksums := m.Data.(type) {
-				case map[crypto.Hash][]byte:
-					for h, checksum := range checksums {
-						str := ""
-						switch h {
-						case crypto.MD5:
-							str = "MD5: "
-						case crypto.SHA1:
-							str = "SHA1: "
-						default:
-							str = fmt.Sprintf("%d: ", h)
-						}
-
-						str += fmt.Sprintf("%X\n", checksum)
-						log.Printf(str)
-					}
-				}
-		*/
 		default:
 			log.Printf("unknown message: %v", m)
 		}
