@@ -23,10 +23,14 @@ var (
 		WriteBufferSize: 1024,
 	}
 
-	addr        = flag.String("addr", "localhost:8080", "http service address")
+	addr = flag.String("addr", "localhost:8080", "http service address")
+	// Global context and cancel func.
 	ctx, cancel = context.WithCancel(context.Background())
 )
 
+// readHashMessages reads the messages during compute checksums of files,
+// marshals the messages to JSON strings,
+// writes the strings as responses to websocket connection.
 func readHashMessages(ctx context.Context, ch <-chan *filehashes.Message, conn *websocket.Conn) {
 	for {
 		select {
@@ -50,6 +54,7 @@ func readHashMessages(ctx context.Context, ch <-chan *filehashes.Message, conn *
 	}
 }
 
+// hashHandler is the handler to process requests to compute file checksums.
 func hashHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the websocket connection.
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -89,13 +94,16 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// shutdown is the handler to shutdown the HTTP server.
 func shutdown(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("shutdown server..."))
 	// Call cancel func
 	cancel()
 }
 
+// home is the handler to render main page.
 func home(w http.ResponseWriter, r *http.Request) {
+	// Create default request for front-end.
 	reqs := []*filehashes.Request{
 		filehashes.NewRequest(
 			"../../filehashes.go",
@@ -104,10 +112,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 				crypto.SHA1,
 			}),
 	}
+
 	buf, _ := json.Marshal(reqs)
 
 	data := struct {
-		Addr     string
+		// Websocket address.
+		Addr string
+		// Default request JSON to send.
 		ReqsJSON string
 	}{
 		"ws://" + r.Host + "/ws",
