@@ -7,6 +7,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/gorilla/websocket"
 	"github.com/northbright/filehashes"
@@ -18,7 +20,8 @@ var (
 		WriteBufferSize: 1024,
 	}
 
-	addr = flag.String("addr", "localhost:8080", "http service address")
+	addr        = flag.String("addr", "localhost:8080", "http service address")
+	ctx, cancel = context.WithCancel(context.Background())
 )
 
 func readHashMessages(ctx context.Context, ch <-chan *filehashes.Message, conn *websocket.Conn) {
@@ -44,20 +47,21 @@ func readHashMessages(ctx context.Context, ch <-chan *filehashes.Message, conn *
 	}
 }
 
-func websocketHandler(w http.ResponseWriter, r *http.Request) {
+func hashHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the websocket connection.
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	// Create a filehashes manager.
 	man, chMsg := filehashes.NewManager(
 		filehashes.DefaultConcurrency,
 		filehashes.DefaultBufferSize,
 	)
+
+	// Start a goroutine to read the messages of hashes.
 	go func() {
 		readHashMessages(ctx, chMsg, conn)
 	}()
@@ -78,10 +82,14 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			man.StartSumFiles(ctx, reqs)
-
 		}
-
 	}
+}
+
+func shutdown(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("shutdown server..."))
+	// Call cancel func
+	cancel()
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -91,9 +99,47 @@ func home(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-	http.HandleFunc("/ws", websocketHandler)
-	http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", home)
+	mux.HandleFunc("/ws", hashHandler)
+	mux.HandleFunc("/shutdown", shutdown)
+
+	server := &http.Server{
+		Addr:    *addr,
+		Handler: mux,
+	}
+
+	idleConnsClosed := make(chan struct{})
+
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+
+		select {
+		case <-sigint:
+			// os.Interrupt, call cancel func.
+			log.Printf("os.Interrupt received")
+			cancel()
+		case <-ctx.Done():
+			log.Printf("shutdown server from user request")
+		}
+
+		// We received an interrupt signal, shut down.
+		if err := server.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("HTTP ListenAndServe: %v", err)
+	}
+
+	<-idleConnsClosed
+	log.Printf("main() exited")
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
