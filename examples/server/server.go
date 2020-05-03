@@ -120,10 +120,10 @@ func main() {
 		select {
 		case <-sigint:
 			// os.Interrupt, call cancel func.
-			log.Printf("os.Interrupt received")
+			log.Printf("shutdown server: os.Interrupt received")
 			cancel()
 		case <-ctx.Done():
-			log.Printf("shutdown server from user request")
+			log.Printf("shutdown server: user request")
 		}
 
 		// We received an interrupt signal, shut down.
