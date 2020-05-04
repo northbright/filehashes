@@ -89,7 +89,7 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			man.StartSumFiles(ctx, reqs)
+			man.Start(ctx, reqs)
 		}
 	}
 }

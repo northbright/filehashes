@@ -33,23 +33,10 @@ func NewManager(concurrency int, bufferSize int) (*Manager, <-chan *Message) {
 	return m, m.ch
 }
 
-// StartSumFile starts to sum a file by given request.
+// Start starts to sum files by given requests.
 // Caller should import hash function packages for the hash algorithms.
 // e.g. import (_ "crypto/md5")
-func (m *Manager) StartSumFile(ctx context.Context, req *Request) {
-	go func() {
-		m.ch <- newMessage(SCHEDULED, req, nil)
-
-		m.sem <- struct{}{}
-		sum(ctx, m.bufferSize, req, m.ch)
-		<-m.sem
-	}()
-}
-
-// StartSumFiles starts to sum files by given requests.
-// Caller should import hash function packages for the hash algorithms.
-// e.g. import (_ "crypto/md5")
-func (m *Manager) StartSumFiles(ctx context.Context, reqs []*Request) {
+func (m *Manager) Start(ctx context.Context, reqs []*Request) {
 	for _, req := range reqs {
 		go func(req *Request) {
 			m.ch <- newMessage(SCHEDULED, req, nil)

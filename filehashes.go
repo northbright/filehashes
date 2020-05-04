@@ -39,27 +39,7 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 	return f, fi, nil
 }
 
-// StartSumFile starts to compute checksums of a file by given hash algorithms.
-// You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
-// Caller should import hash function packages for the hash algorithms.
-// e.g. import (_ "crypto/md5")
-// It'll start a new goroutine to compoute checksums.
-// It returns a channel to receive the messages,
-// the channel will be closed after the goroutine exited.
-// You may use for - range to read the messages.
-func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []crypto.Hash) <-chan *Message {
-	ch := make(chan *Message)
-	req := &Request{file, hashAlgs}
-
-	go func() {
-		sum(ctx, bufferSize, req, ch)
-		close(ch)
-	}()
-
-	return ch
-}
-
-// StartSumFiles starts to computes checksums of files.
+// Start computes checksums of files.
 // reqs are the requests which contains files and hash algorithms.
 // Caller should import hash function packages for the hash algorithms.
 // e.g. import (_ "crypto/md5")
@@ -67,7 +47,7 @@ func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []c
 // It returns a channel to receive the messages,
 // the channel will be closed after the goroutine exited.
 // You may use for - range to read the messages.
-func StartSumFiles(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan *Message {
+func Start(ctx context.Context, concurrency int, bufferSize int, reqs []*Request) <-chan *Message {
 	ch := make(chan *Message)
 
 	go func() {
