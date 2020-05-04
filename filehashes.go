@@ -15,9 +15,10 @@ var (
 	DefaultConcurrency = 4
 	DefaultBufferSize  = 8 * 1024 * 1024
 
-	ErrNoFileToHash = errors.New("no file to hash")
-	ErrNoHashAlgs   = errors.New("no hash algorithms")
-	ErrFileIsDir    = errors.New("file is dir")
+	ErrNoFileToHash        = errors.New("no file to hash")
+	ErrNoHashAlgs          = errors.New("no hash algorithms")
+	ErrHashAlgNotAvailable = errors.New("hash algorithm is not available")
+	ErrFileIsDir           = errors.New("file is dir")
 )
 
 func openFile(file string) (*os.File, os.FileInfo, error) {
@@ -40,13 +41,8 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 
 // StartSumFile starts to compute checksums of a file by given hash algorithms.
 // You may specify one or more hash algorithm(s) in hashAlgs parameter(s).
-// Caller should import hash function packages for the hash algorithms,
-// or it'll panic due to not linking the libraries.
-// e.g.
-// import (
-//   _ "crypto/md5"
-//   _ "crypto/sha1"
-// )
+// Caller should import hash function packages for the hash algorithms.
+// e.g. import (_ "crypto/md5")
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
 // the channel will be closed after the goroutine exited.
@@ -65,13 +61,8 @@ func StartSumFile(ctx context.Context, bufferSize int, file string, hashAlgs []c
 
 // StartSumFiles starts to computes checksums of files.
 // reqs are the requests which contains files and hash algorithms.
-// Caller should import hash function packages for the hash algorithms,
-// or it'll panic due to not linking the libraries.
-// e.g.
-// import (
-//   _ "crypto/md5"
-//   _ "crypto/sha1"
-// )
+// Caller should import hash function packages for the hash algorithms.
+// e.g. import (_ "crypto/md5")
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
 // the channel will be closed after the goroutine exited.
@@ -145,9 +136,11 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 
 	hashes := map[crypto.Hash]hash.Hash{}
 	for _, h := range req.HashAlgs {
-		if h.Available() {
-			hashes[h] = h.New()
+		if !h.Available() {
+			ch <- newMessage(ERROR, req, ErrHashAlgNotAvailable.Error())
+			return
 		}
+		hashes[h] = h.New()
 	}
 
 	r := bufio.NewReaderSize(f, bufferSize)
