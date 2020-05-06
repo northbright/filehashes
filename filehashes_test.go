@@ -21,10 +21,10 @@ func ExampleStart() {
 	// reqs contains filehashes.Request,
 	// which specify the file to hash and the hash algorithm(s).
 	reqs := []*filehashes.Request{
-		filehashes.NewRequest("filehashes.go", []crypto.Hash{crypto.MD5}),
-		filehashes.NewRequest("README.md", []crypto.Hash{crypto.SHA1}),
-		filehashes.NewRequest("go.mod", []crypto.Hash{crypto.MD5, crypto.SHA1}),
-		filehashes.NewRequest("go.sum", []crypto.Hash{crypto.MD5, crypto.SHA1}),
+		filehashes.NewRequest("filehashes.go", []crypto.Hash{crypto.MD5}, nil),
+		filehashes.NewRequest("README.md", []crypto.Hash{crypto.SHA1}, nil),
+		filehashes.NewRequest("go.mod", []crypto.Hash{crypto.MD5, crypto.SHA1}, nil),
+		filehashes.NewRequest("go.sum", []crypto.Hash{crypto.MD5, crypto.SHA1}, nil),
 	}
 
 	// Start returns a channel to receive messages.
@@ -42,6 +42,7 @@ func ExampleStart() {
 			filehashes.SCHEDULED,
 			filehashes.STARTED,
 			filehashes.STOPPED,
+			filehashes.RESTORED,
 			filehashes.PROGRESSUPDATED,
 			filehashes.DONE:
 			buf, _ := m.JSON()

@@ -1,7 +1,10 @@
 package filehashes
 
 import (
+	"crypto"
+	"encoding"
 	"encoding/json"
+	"hash"
 )
 
 // MessageType represents the type of messages.
@@ -12,6 +15,7 @@ const (
 	SCHEDULED
 	STARTED
 	STOPPED
+	RESTORED
 	PROGRESSUPDATED
 	DONE
 	UNKNOWN
@@ -24,11 +28,34 @@ var (
 		SCHEDULED:       "scheduled",
 		STARTED:         "started",
 		STOPPED:         "stopped",
+		RESTORED:        "restored",
 		PROGRESSUPDATED: "progress_updated",
 		DONE:            "done",
 		UNKNOWN:         "unknown",
 	}
 )
+
+// State represents the hashes states.
+type State struct {
+	// SummedSize is summed size of file.
+	SummedSize int64 `json:"summed_size,string"`
+	// Data contains binary datas marshaled from hashes.
+	Datas map[crypto.Hash][]byte `json:"datas"`
+}
+
+// newState returns the current hash state.
+func newState(summedSize int64, hashes map[crypto.Hash]hash.Hash) *State {
+	datas := map[crypto.Hash][]byte{}
+
+	for k, v := range hashes {
+		m := v.(encoding.BinaryMarshaler)
+		data, _ := m.MarshalBinary()
+		datas[k] = data
+	}
+
+	state := &State{SummedSize: summedSize, Datas: datas}
+	return state
+}
 
 // Message represents the messages.
 type Message struct {
@@ -44,7 +71,7 @@ type Message struct {
 	// ERROR: data is a string to store error message.
 	// SCHEDULED: data is nil.
 	// STARTED: data is nil.
-	// STOPPED: data is a string to store the reason of stopped.
+	// STOPPED, RESTORED: data is a State. It can be used to pause / resume hashing.
 	// PROGRESSUPDATED: data is a int to store the percent(0 - 100).
 	// DONE: data is a map[crypto.Hash]string to store the checksums.
 	Data interface{} `json:"data,omitempty"`

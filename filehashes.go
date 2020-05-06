@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto"
+	"encoding"
 	"errors"
 	"fmt"
 	"hash"
@@ -15,10 +16,11 @@ var (
 	DefaultConcurrency = 4
 	DefaultBufferSize  = 8 * 1024 * 1024
 
-	ErrNoFileToHash        = errors.New("no file to hash")
-	ErrNoHashAlgs          = errors.New("no hash algorithms")
-	ErrHashAlgNotAvailable = errors.New("hash algorithm is not available")
-	ErrFileIsDir           = errors.New("file is dir")
+	ErrNoFileToHash          = errors.New("no file to hash")
+	ErrNoHashAlgs            = errors.New("no hash algorithms")
+	ErrHashAlgNotAvailable   = errors.New("hash algorithm is not available")
+	ErrStateAndReqNotMatched = errors.New("hash state and request are not matched")
+	ErrFileIsDir             = errors.New("file is dir")
 )
 
 func openFile(file string) (*os.File, os.FileInfo, error) {
@@ -131,12 +133,34 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 	oldProgress := 0
 	progress := 0
 
+	// Restore previous hash states.
+	if req.Stat != nil {
+		for k, v := range hashes {
+			data, ok := req.Stat.Datas[k]
+			if !ok {
+				ch <- newMessage(ERROR, req, ErrStateAndReqNotMatched.Error())
+				return
+			}
+			u := v.(encoding.BinaryUnmarshaler)
+			if err := u.UnmarshalBinary(data); err != nil {
+				ch <- newMessage(ERROR, req, err.Error())
+				return
+			}
+		}
+
+		// Update summed size.
+		summedSize = req.Stat.SummedSize
+
+		ch <- newMessage(RESTORED, req, req.Stat)
+	}
+
 LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			// Send stopped message.
-			ch <- newMessage(STOPPED, req, ctx.Err().Error())
+			state := newState(summedSize, hashes)
+			ch <- newMessage(STOPPED, req, state)
 			return
 		default:
 			n, err := r.Read(buf)

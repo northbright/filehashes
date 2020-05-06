@@ -110,7 +110,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 			[]crypto.Hash{
 				crypto.MD5,
 				crypto.SHA1,
-			}),
+			},
+			nil,
+		),
 	}
 
 	buf, _ := json.Marshal(reqs)

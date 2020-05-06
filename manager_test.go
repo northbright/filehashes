@@ -23,10 +23,10 @@ func ExampleManager_Start() {
 
 	// Create requests.
 	reqs := []*filehashes.Request{
-		filehashes.NewRequest("README.md", []crypto.Hash{crypto.MD5}),
-		filehashes.NewRequest("filehashes.go", []crypto.Hash{crypto.SHA1}),
-		filehashes.NewRequest("go.mod", []crypto.Hash{crypto.MD5, crypto.SHA1}),
-		filehashes.NewRequest("go.sum", []crypto.Hash{crypto.MD5, crypto.SHA1}),
+		filehashes.NewRequest("README.md", []crypto.Hash{crypto.MD5}, nil),
+		filehashes.NewRequest("filehashes.go", []crypto.Hash{crypto.SHA1}, nil),
+		filehashes.NewRequest("go.mod", []crypto.Hash{crypto.MD5, crypto.SHA1}, nil),
+		filehashes.NewRequest("go.sum", []crypto.Hash{crypto.MD5, crypto.SHA1}, nil),
 	}
 
 	// Start to sum files.
@@ -47,6 +47,7 @@ func ExampleManager_Start() {
 				filehashes.SCHEDULED,
 				filehashes.STARTED,
 				filehashes.STOPPED,
+				filehashes.RESTORED,
 				filehashes.PROGRESSUPDATED,
 				filehashes.DONE:
 				// All messages can be marshaled to JSON.
