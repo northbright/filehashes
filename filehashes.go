@@ -17,8 +17,8 @@ var (
 	DefaultBufferSize  = 8 * 1024 * 1024
 
 	ErrNoFileToHash          = errors.New("no file to hash")
-	ErrNoHashAlgs            = errors.New("no hash algorithms")
-	ErrHashAlgNotAvailable   = errors.New("hash algorithm is not available")
+	ErrNoHashFuncs           = errors.New("no hash functions")
+	ErrHashAlgNotAvailable   = errors.New("hash function is not available")
 	ErrStateAndReqNotMatched = errors.New("hash state and request are not matched")
 	ErrFileIsDir             = errors.New("file is dir")
 )
@@ -42,8 +42,8 @@ func openFile(file string) (*os.File, os.FileInfo, error) {
 }
 
 // Start computes checksums of files.
-// reqs are the requests which contains files and hash algorithms.
-// Caller should import hash function packages for the hash algorithms.
+// reqs are the requests which contains files and hash functions.
+// Caller should import hash function packages for the hash functions.
 // e.g. import (_ "crypto/md5")
 // It'll start a new goroutine to compoute checksums.
 // It returns a channel to receive the messages,
@@ -110,14 +110,14 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 	}
 	defer f.Close()
 
-	// Check hash algorithms.
-	if len(req.HashAlgs) == 0 {
-		ch <- newMessage(ERROR, req, ErrNoHashAlgs.Error())
+	// Check hash functions.
+	if len(req.HashFuncs) == 0 {
+		ch <- newMessage(ERROR, req, ErrNoHashFuncs.Error())
 		return
 	}
 
 	hashes := map[crypto.Hash]hash.Hash{}
-	for _, h := range req.HashAlgs {
+	for _, h := range req.HashFuncs {
 		if !h.Available() {
 			ch <- newMessage(ERROR, req, ErrHashAlgNotAvailable.Error())
 			return

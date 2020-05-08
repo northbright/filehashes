@@ -19,7 +19,7 @@ func ExampleStart() {
 	bufferSize := filehashes.DefaultBufferSize
 
 	// reqs contains filehashes.Request,
-	// which specify the file to hash and the hash algorithm(s).
+	// which specify the file to hash and the hash function(s).
 	reqs := []*filehashes.Request{
 		filehashes.NewRequest("filehashes.go", []crypto.Hash{crypto.MD5}, nil),
 		filehashes.NewRequest("README.md", []crypto.Hash{crypto.SHA1}, nil),

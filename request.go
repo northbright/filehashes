@@ -7,19 +7,20 @@ import (
 
 // Request represents the request of sum a single file.
 type Request struct {
-	File     string        `json:"file"`
-	HashAlgs []crypto.Hash `json:"hash_algs"`
-	Stat     *State        `json:"stat"`
+	File      string        `json:"file"`
+	HashFuncs []crypto.Hash `json:"hash_funcs"`
+	Stat      *State        `json:"stat"`
 }
 
 // NewRequest returns a new request.
 // file is the path of file to be compute hash checksum.
-// hashAlgs contains the hash functions for hashing the file.
+// hashFuncs contains the hash functions.
 // stat contains the previous hash states.
-// If stat is not nil, it'll restore saved hash states and resume hashing.
-// If stat is nil, it'll initialize the hashes and start / restart hashing the file.
-func NewRequest(file string, hashAlgs []crypto.Hash, stat *State) *Request {
-	return &Request{file, hashAlgs, stat}
+//
+// If stat is nil, it starts to read the beginning of the file and compute checksums.
+// otherwise, it'll restore saved hash states and resume reading file from the given offset.
+func NewRequest(file string, hashFuncs []crypto.Hash, stat *State) *Request {
+	return &Request{file, hashFuncs, stat}
 }
 
 // JSON marshals a request as a JSON.

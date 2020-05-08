@@ -34,7 +34,7 @@ func NewManager(concurrency int, bufferSize int) (*Manager, <-chan *Message) {
 }
 
 // Start starts to sum files by given requests.
-// Caller should import hash function packages for the hash algorithms.
+// Caller should import hash function packages for the hash functions.
 // e.g. import (_ "crypto/md5")
 func (m *Manager) Start(ctx context.Context, reqs []*Request) {
 	for _, req := range reqs {
