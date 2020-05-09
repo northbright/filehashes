@@ -27,3 +27,25 @@ func NewRequest(file string, hashFuncs []crypto.Hash, stat *State) *Request {
 func (req *Request) JSON() ([]byte, error) {
 	return json.Marshal(req)
 }
+
+// StateIsValid validates the saved hash states in the request.
+func (req *Request) StateIsValid() bool {
+	// State is nil, start hashing from the beginning of the file.
+	if req.Stat == nil {
+		return true
+	}
+
+	// Check hash function numbers.
+	if len(req.HashFuncs) != len(req.Stat.Datas) {
+		return false
+	}
+
+	// Check if hash function exists in states.
+	for _, h := range req.HashFuncs {
+		if _, ok := req.Stat.Datas[h]; !ok {
+			return false
+		}
+	}
+
+	return true
+}

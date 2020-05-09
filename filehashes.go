@@ -16,11 +16,11 @@ var (
 	DefaultConcurrency = 4
 	DefaultBufferSize  = 8 * 1024 * 1024
 
-	ErrNoFileToHash          = errors.New("no file to hash")
-	ErrNoHashFuncs           = errors.New("no hash functions")
-	ErrHashAlgNotAvailable   = errors.New("hash function is not available")
-	ErrStateAndReqNotMatched = errors.New("hash state and request are not matched")
-	ErrFileIsDir             = errors.New("file is dir")
+	ErrNoFileToHash         = errors.New("no file to hash")
+	ErrNoHashFuncs          = errors.New("no hash functions")
+	ErrHashFuncNotAvailable = errors.New("hash function is not available")
+	ErrInvalidHashState     = errors.New("invalid hash state")
+	ErrFileIsDir            = errors.New("file is dir")
 )
 
 func openFile(file string) (*os.File, os.FileInfo, error) {
@@ -119,7 +119,7 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 	hashes := map[crypto.Hash]hash.Hash{}
 	for _, h := range req.HashFuncs {
 		if !h.Available() {
-			ch <- newMessage(ERROR, req, ErrHashAlgNotAvailable.Error())
+			ch <- newMessage(ERROR, req, ErrHashFuncNotAvailable.Error())
 			return
 		}
 		hashes[h] = h.New()
@@ -135,13 +135,16 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 
 	// Restore previous hash states.
 	if req.Stat != nil {
+		if !req.StateIsValid() {
+			ch <- newMessage(ERROR, req, ErrInvalidHashState.Error())
+			return
+		}
+
+		// Restore saved hash states
 		for k, v := range hashes {
-			data, ok := req.Stat.Datas[k]
-			if !ok {
-				ch <- newMessage(ERROR, req, ErrStateAndReqNotMatched.Error())
-				return
-			}
 			u := v.(encoding.BinaryUnmarshaler)
+			data := req.Stat.Datas[k]
+
 			if err := u.UnmarshalBinary(data); err != nil {
 				ch <- newMessage(ERROR, req, err.Error())
 				return
@@ -150,7 +153,6 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 
 		// Update summed size.
 		summedSize = req.Stat.SummedSize
-
 		ch <- newMessage(RESTORED, req, req.Stat)
 	}
 
