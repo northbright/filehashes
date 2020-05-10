@@ -154,6 +154,11 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 		// Update summed size.
 		summedSize = req.Stat.SummedSize
 		ch <- newMessage(RESTORED, req, req.Stat)
+
+		// Update progress.
+		progress = req.Stat.Progress
+		oldProgress = progress
+		ch <- newMessage(PROGRESSUPDATED, req, progress)
 	}
 
 LOOP:
@@ -161,7 +166,7 @@ LOOP:
 		select {
 		case <-ctx.Done():
 			// Send stopped message.
-			state := newState(summedSize, hashes)
+			state := newState(summedSize, progress, hashes)
 			ch <- newMessage(STOPPED, req, state)
 			return
 		default:
