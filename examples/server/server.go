@@ -23,10 +23,16 @@ var (
 		WriteBufferSize: 1024,
 	}
 
-	addr = flag.String("addr", "localhost:8080", "http service address")
-	// Global context and cancel func.
+	addr        = flag.String("addr", "localhost:8080", "http service address")
 	ctx, cancel = context.WithCancel(context.Background())
+	ctxMap      = map[string]context.Context{}
+	cancelMap   = map[string]context.CancelFunc{}
 )
+
+type Command struct {
+	Action string             `json:"action"`
+	Req    filehashes.Request `json:"req"`
+}
 
 // readHashMessages reads the messages during compute checksums of files,
 // marshals the messages to JSON strings,
@@ -82,14 +88,25 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if messageType == websocket.TextMessage {
-			reqs := []*filehashes.Request{}
+			cmd := Command{}
 
-			if err := json.Unmarshal(m, &reqs); err != nil {
+			log.Printf("m: %s", string(m))
+			if err := json.Unmarshal(m, &cmd); err != nil {
 				log.Printf("json.Unmarshal() error: %v", err)
 				continue
 			}
 
-			man.Start(ctx, reqs)
+			reqs := []*filehashes.Request{
+				&cmd.Req,
+			}
+
+			if cmd.Action == "start" {
+				ctxMap[cmd.Req.File], cancelMap[cmd.Req.File] = context.WithCancel(ctx)
+
+				man.Start(ctxMap[cmd.Req.File], reqs)
+			} else if cmd.Action == "stop" {
+				cancelMap[cmd.Req.File]()
+			}
 		}
 	}
 }
@@ -104,18 +121,16 @@ func shutdown(w http.ResponseWriter, r *http.Request) {
 // home is the handler to render main page.
 func home(w http.ResponseWriter, r *http.Request) {
 	// Create default request for front-end.
-	reqs := []*filehashes.Request{
-		filehashes.NewRequest(
-			"../../filehashes.go",
-			[]crypto.Hash{
-				crypto.MD5,
-				crypto.SHA1,
-			},
-			nil,
-		),
-	}
+	req := filehashes.NewRequest(
+		"../../filehashes.go",
+		[]crypto.Hash{
+			crypto.MD5,
+			crypto.SHA1,
+		},
+		nil,
+	)
 
-	buf, _ := json.Marshal(reqs)
+	buf, _ := json.Marshal(req)
 
 	data := struct {
 		// Websocket address.
@@ -186,6 +201,8 @@ window.addEventListener("load", function(evt) {
     var output = document.getElementById("output");
     var input = document.getElementById("input");
     var ws;
+    var req;
+    var resume_req;
     var print = function(message) {
         var d = document.createElement("div");
         d.textContent = message;
@@ -205,18 +222,47 @@ window.addEventListener("load", function(evt) {
         }
         ws.onmessage = function(evt) {
             print("RESPONSE: " + evt.data);
+            if (evt.data.type=3) {
+	       resume_req = JSON.parse(evt.data).data;
+	       console.log("resume_req:" + resume_req);
+	    }
         }
         ws.onerror = function(evt) {
             print("ERROR: " + evt.data);
         }
         return false;
     };
-    document.getElementById("send").onclick = function(evt) {
+    document.getElementById("start").onclick = function(evt) {
         if (!ws) {
             return false;
         }
-        print("SEND: " + input.value);
-        ws.send(input.value);
+
+        var data = {};
+	data.action = "start";
+	if (!resume_req) { 
+	    req = JSON.parse(input.value);
+	    data.req = req;
+	} else {
+	    data.req = resume_req;
+	    console.log("data.req: " + data.req);
+	}
+
+        var str = JSON.stringify(data);
+        print("SEND: " + str);
+        ws.send(str);
+        return false;
+    };
+    document.getElementById("stop").onclick = function(evt) {
+        if (!ws) {
+            return false;
+        }
+
+        var data = {};
+	data.action = "stop";
+	data.req = req;
+	var str = JSON.stringify(data);
+        print("SEND: " + str);
+        ws.send(str);
         return false;
     };
     document.getElementById("close").onclick = function(evt) {
@@ -240,7 +286,8 @@ You can change the message and send multiple times.
 <button id="open">Open</button>
 <button id="close">Close</button>
 <p><input id="input" type="text" value="{{ .ReqsJSON }}">
-<button id="send">Send</button>
+<button id="start">Start/Stop</button>
+<button id="stop">Stop</button>
 </form>
 </td><td valign="top" width="50%">
 <div id="output"></div>

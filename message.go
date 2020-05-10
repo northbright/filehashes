@@ -46,7 +46,8 @@ type Message struct {
 	// ERROR: data is a string to store error message.
 	// SCHEDULED: data is nil.
 	// STARTED: data is nil.
-	// STOPPED, RESTORED: data is a State. It can be used to pause / resume hashing.
+	// STOPPED, RESTORED: data is a updated *Request with *State.
+	// It can be used to pause / resume hashing.
 	// PROGRESSUPDATED: data is a int to store the percent(0 - 100).
 	// DONE: data is a map[crypto.Hash]string to store the checksums.
 	Data interface{} `json:"data,omitempty"`

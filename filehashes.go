@@ -165,9 +165,11 @@ LOOP:
 	for {
 		select {
 		case <-ctx.Done():
-			// Send stopped message.
+			// Save state and create a request to resume.
 			state := newState(summedSize, progress, hashes)
-			ch <- newMessage(STOPPED, req, state)
+			resumeReq := &Request{req.File, req.HashFuncs, state}
+			// Send stopped message.
+			ch <- newMessage(STOPPED, req, resumeReq)
 			return
 		default:
 			n, err := r.Read(buf)
