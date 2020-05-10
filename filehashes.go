@@ -185,7 +185,7 @@ LOOP:
 
 			summedSize += int64(n)
 			if size != 0 {
-				progress = int(summedSize * 100 / size)
+				progress = int(float64(summedSize) / float64(size) * 100)
 			}
 			if progress != oldProgress {
 				// Send progress updated message.
