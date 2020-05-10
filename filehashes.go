@@ -125,9 +125,7 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 		hashes[h] = h.New()
 	}
 
-	r := bufio.NewReaderSize(f, bufferSize)
-	buf := make([]byte, bufferSize)
-
+	// Initialize variables for progress.
 	size := fi.Size()
 	summedSize := int64(0)
 	oldProgress := 0
@@ -151,8 +149,13 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 			}
 		}
 
-		// Update summed size.
+		// Seek file offset and update summed size.
 		summedSize = req.Stat.SummedSize
+		if _, err := f.Seek(summedSize, os.SEEK_SET); err != nil {
+			ch <- newMessage(ERROR, req, err.Error())
+			return
+		}
+
 		ch <- newMessage(RESTORED, req, req.Stat)
 
 		// Update progress.
@@ -160,6 +163,10 @@ func sum(ctx context.Context, bufferSize int, req *Request, ch chan *Message) {
 		oldProgress = progress
 		ch <- newMessage(PROGRESSUPDATED, req, progress)
 	}
+
+	// Create a bufio.Reader.
+	r := bufio.NewReaderSize(f, bufferSize)
+	buf := make([]byte, bufferSize)
 
 LOOP:
 	for {

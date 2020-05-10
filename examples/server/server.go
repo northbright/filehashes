@@ -222,10 +222,15 @@ window.addEventListener("load", function(evt) {
         }
         ws.onmessage = function(evt) {
             print("RESPONSE: " + evt.data);
-            if (evt.data.type=3) {
-	       resume_req = JSON.parse(evt.data).data;
-	       console.log("resume_req:" + resume_req);
-	    }
+	       var msg = JSON.parse(evt.data);
+	       if (msg.type === 3) {
+	           resume_req = msg.data;
+	           console.log("resume_req:" + resume_req);
+	       } else {
+	           if (msg.type === 6) {
+		       resume_req = null;
+		   }
+               }
         }
         ws.onerror = function(evt) {
             print("ERROR: " + evt.data);
