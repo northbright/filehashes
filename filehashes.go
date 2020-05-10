@@ -188,9 +188,9 @@ LOOP:
 				progress = int(float64(summedSize) / float64(size) * 100)
 			}
 			if progress != oldProgress {
+				oldProgress = progress
 				// Send progress updated message.
 				ch <- newMessage(PROGRESSUPDATED, req, progress)
-				oldProgress = progress
 			}
 		}
 	}
