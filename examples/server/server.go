@@ -30,8 +30,8 @@ var (
 )
 
 type Command struct {
-	Action string             `json:"action"`
-	Req    filehashes.Request `json:"req"`
+	Action string              `json:"action"`
+	Req    *filehashes.Request `json:"req"`
 }
 
 // readHashMessages reads the messages during compute checksums of files,
@@ -96,14 +96,10 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			reqs := []*filehashes.Request{
-				&cmd.Req,
-			}
-
 			if cmd.Action == "start" {
 				ctxMap[cmd.Req.File], cancelMap[cmd.Req.File] = context.WithCancel(ctx)
 
-				man.Start(ctxMap[cmd.Req.File], reqs)
+				man.Start(ctxMap[cmd.Req.File], cmd.Req)
 			} else if cmd.Action == "stop" {
 				cancelMap[cmd.Req.File]()
 			}
@@ -122,7 +118,7 @@ func shutdown(w http.ResponseWriter, r *http.Request) {
 func home(w http.ResponseWriter, r *http.Request) {
 	// Create default request for front-end.
 	req := filehashes.NewRequest(
-		"../../filehashes.go",
+		"../../manager.go",
 		[]crypto.Hash{
 			crypto.MD5,
 			crypto.SHA1,
