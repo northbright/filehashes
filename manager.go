@@ -83,6 +83,7 @@ func (m *Manager) Start(ctx context.Context, req *Request) {
 func (m *Manager) sum(ctx context.Context, req *Request) {
 	defer func() {
 		<-m.sem
+		m.ch <- newMessage(EXITED, req, nil)
 	}()
 
 	m.ch <- newMessage(SCHEDULED, req, nil)
