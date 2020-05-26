@@ -83,9 +83,11 @@ func (m *Manager) Start(ctx context.Context, req *Request) {
 func (m *Manager) sum(ctx context.Context, req *Request) {
 	defer func() {
 		<-m.sem
+		// Task(goroutine) exited.
 		m.ch <- newMessage(EXITED, req, nil)
 	}()
 
+	// Task is scheduled.
 	m.ch <- newMessage(SCHEDULED, req, nil)
 
 BEFORE_START:
@@ -96,7 +98,7 @@ BEFORE_START:
 		case <-ctx.Done():
 			// Stopped before start, use previous request.
 			resumeReq := req
-			// Send stopped message.
+			// Task is stopped.
 			m.ch <- newMessage(STOPPED, req, resumeReq)
 			return
 		case m.sem <- struct{}{}:
@@ -164,6 +166,7 @@ BEFORE_START:
 			return
 		}
 
+		// Task is restored.
 		m.ch <- newMessage(RESTORED, req, req.Stat)
 
 		// Update progress.
@@ -171,7 +174,7 @@ BEFORE_START:
 		oldProgress = progress
 		m.ch <- newMessage(PROGRESS_UPDATED, req, progress)
 	} else {
-		// Send sum started message.
+		// Task is started.
 		m.ch <- newMessage(STARTED, req, nil)
 	}
 
@@ -182,7 +185,7 @@ LOOP:
 			// Save state and create a request to resume.
 			state := newState(summedSize, progress, hashes)
 			resumeReq := &Request{req.File, req.HashFuncs, state}
-			// Send stopped message.
+			// Task is stopped.
 			m.ch <- newMessage(STOPPED, req, resumeReq)
 			return
 		default:
@@ -210,7 +213,7 @@ LOOP:
 			}
 			if progress != oldProgress {
 				oldProgress = progress
-				// Send progress updated message.
+				// Task progress is updated.
 				m.ch <- newMessage(PROGRESS_UPDATED, req, progress)
 			}
 		}
@@ -227,5 +230,6 @@ LOOP:
 		m.ch <- newMessage(PROGRESS_UPDATED, req, 100)
 	}
 
+	// Task is done.
 	m.ch <- newMessage(DONE, req, checksums)
 }
