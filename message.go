@@ -15,6 +15,7 @@ const (
 	RESTORED
 	PROGRESS_UPDATED
 	DONE
+	EXITED
 	UNKNOWN
 	maxTYPE
 )
@@ -27,6 +28,7 @@ var (
 		STOPPED:          "stopped",
 		RESTORED:         "restored",
 		PROGRESS_UPDATED: "progress_updated",
+		EXITED:           "exited",
 		DONE:             "done",
 		UNKNOWN:          "unknown",
 	}
@@ -50,6 +52,7 @@ type Message struct {
 	// It can be used to pause / resume hashing.
 	// PROGRESS_UPDATED: data is a int to store the percent(0 - 100).
 	// DONE: data is a map[crypto.Hash]string to store the checksums.
+	// EXITED: data is nil.
 	Data interface{} `json:"data,omitempty"`
 }
 
