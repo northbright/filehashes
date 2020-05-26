@@ -63,7 +63,8 @@ func ExampleManager_Start() {
 				filehashes.STARTED,
 				filehashes.RESTORED,
 				filehashes.PROGRESS_UPDATED,
-				filehashes.DONE:
+				filehashes.DONE,
+				filehashes.EXITED:
 				// All messages can be marshaled to JSON.
 				buf, _ := m.JSON()
 				log.Printf("message: %v", string(buf))
