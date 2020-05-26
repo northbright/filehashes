@@ -13,7 +13,7 @@ const (
 	STARTED
 	STOPPED
 	RESTORED
-	PROGRESSUPDATED
+	PROGRESS_UPDATED
 	DONE
 	UNKNOWN
 	maxTYPE
@@ -21,14 +21,14 @@ const (
 
 var (
 	messageTypeStrs = map[MessageType]string{
-		ERROR:           "error",
-		SCHEDULED:       "scheduled",
-		STARTED:         "started",
-		STOPPED:         "stopped",
-		RESTORED:        "restored",
-		PROGRESSUPDATED: "progress_updated",
-		DONE:            "done",
-		UNKNOWN:         "unknown",
+		ERROR:            "error",
+		SCHEDULED:        "scheduled",
+		STARTED:          "started",
+		STOPPED:          "stopped",
+		RESTORED:         "restored",
+		PROGRESS_UPDATED: "progress_updated",
+		DONE:             "done",
+		UNKNOWN:          "unknown",
 	}
 )
 
@@ -48,7 +48,7 @@ type Message struct {
 	// STARTED: data is nil.
 	// STOPPED, RESTORED: data is a updated *Request with *State.
 	// It can be used to pause / resume hashing.
-	// PROGRESSUPDATED: data is a int to store the percent(0 - 100).
+	// PROGRESS_UPDATED: data is a int to store the percent(0 - 100).
 	// DONE: data is a map[crypto.Hash]string to store the checksums.
 	Data interface{} `json:"data,omitempty"`
 }

@@ -167,7 +167,7 @@ BEFORE_START:
 		// Update progress.
 		progress = req.Stat.Progress
 		oldProgress = progress
-		m.ch <- newMessage(PROGRESSUPDATED, req, progress)
+		m.ch <- newMessage(PROGRESS_UPDATED, req, progress)
 	} else {
 		// Send sum started message.
 		m.ch <- newMessage(STARTED, req, nil)
@@ -209,7 +209,7 @@ LOOP:
 			if progress != oldProgress {
 				oldProgress = progress
 				// Send progress updated message.
-				m.ch <- newMessage(PROGRESSUPDATED, req, progress)
+				m.ch <- newMessage(PROGRESS_UPDATED, req, progress)
 			}
 		}
 	}
@@ -222,7 +222,7 @@ LOOP:
 
 	// Update progress for 0-size file.
 	if size == 0 {
-		m.ch <- newMessage(PROGRESSUPDATED, req, 100)
+		m.ch <- newMessage(PROGRESS_UPDATED, req, 100)
 	}
 
 	m.ch <- newMessage(DONE, req, checksums)
