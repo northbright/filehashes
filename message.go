@@ -8,14 +8,24 @@ import (
 type MessageType uint
 
 const (
+	// An error occured.
 	ERROR MessageType = iota
+	// Task is scheduled.
 	SCHEDULED
+	// Task is started.
 	STARTED
+	// Task is stopped.
 	STOPPED
+	// Task is restored.
 	RESTORED
+	// Progress of task is updated.
 	PROGRESS_UPDATED
+	// Task is done.
 	DONE
+	// Goroutine of the task exited.
+	// It's send after one of ERROR / STOPPED / DONE message.
 	EXITED
+	// Unknown message type.
 	UNKNOWN
 	maxTYPE
 )
