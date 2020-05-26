@@ -70,9 +70,10 @@ func NewManager(concurrency int, bufferSize int) (*Manager, <-chan *Message) {
 	return m, m.ch
 }
 
-// Start starts to sum files by given request.
+// Start starts to sum file by given request.
 // Caller should import hash function packages for the hash functions.
 // e.g. import (_ "crypto/md5")
+// It'll start a new goroutine for each request.
 func (m *Manager) Start(ctx context.Context, req *Request) {
 	go func() {
 		m.sum(ctx, req)
