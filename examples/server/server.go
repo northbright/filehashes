@@ -287,7 +287,7 @@ You can change the message and send multiple times.
 <button id="open">Open</button>
 <button id="close">Close</button>
 <p><input id="input" type="text" value="{{ .ReqsJSON }}">
-<button id="start">Start/Stop</button>
+<button id="start">Start</button>
 <button id="stop">Stop</button>
 </form>
 </td><td valign="top" width="50%">
