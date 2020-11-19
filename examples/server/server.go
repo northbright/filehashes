@@ -25,8 +25,6 @@ var (
 
 	addr        = flag.String("addr", "localhost:8080", "http service address")
 	ctx, cancel = context.WithCancel(context.Background())
-	ctxMap      = map[string]context.Context{}
-	cancelMap   = map[string]context.CancelFunc{}
 )
 
 type Command struct {
@@ -60,25 +58,11 @@ func readHashMessages(ctx context.Context, ch <-chan *filehashes.Message, conn *
 	}
 }
 
-// hashHandler is the handler to process requests to compute file checksums.
-func hashHandler(w http.ResponseWriter, r *http.Request) {
-	// Get the websocket connection.
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	// Create a filehashes manager.
-	man, chMsg := filehashes.NewManager(
-		filehashes.DefaultConcurrency,
-		filehashes.DefaultBufferSize,
-	)
-
-	// Start a goroutine to read the messages of hashes.
-	go func() {
-		readHashMessages(ctx, chMsg, conn)
-	}()
+// processWebsocketCmd reads commands from Websocket connection,
+// and send the commands to the filehashes.Manager to process them.
+func processWebsocketCmd(conn *websocket.Conn, man *filehashes.Manager) {
+	ctxMap := map[string]context.Context{}
+	cancelMap := map[string]context.CancelFunc{}
 
 	for {
 		messageType, m, err := conn.ReadMessage()
@@ -105,6 +89,32 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// hashHandler is the handler to process requests to compute file checksums.
+func hashHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the websocket connection.
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Create a filehashes manager.
+	man, chMsg := filehashes.NewManager(
+		filehashes.DefaultConcurrency,
+		filehashes.DefaultBufferSize,
+	)
+
+	// Start a goroutine to read the messages of hashes.
+	go func() {
+		readHashMessages(ctx, chMsg, conn)
+	}()
+
+	// Start a goroutine to process Websocket commands.
+	go func() {
+		processWebsocketCmd(conn, man)
+	}()
 }
 
 // shutdown is the handler to shutdown the HTTP server.
