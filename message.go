@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 )
 
-// MessageType represents the type of messages.
+// MessageType represents the type of messages,
+// which are generated when computing file hashes.
 type MessageType uint
 
 const (
